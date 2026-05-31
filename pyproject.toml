@@ -1,0 +1,46 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ckpt"
+version = "0.1.0"
+description = "A CLI utility for capturing and restoring development session checkpoints."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Marcello" },
+]
+keywords = ["checkpoint", "session", "cli", "git", "developer-tools"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Version Control",
+    "Typing :: Typed",
+]
+dependencies = [
+    "typer",
+    "mcp",
+    "pydantic>=2.0.0",
+    "textual",
+    "httpx",
+]
+
+[project.scripts]
+ckpt = "ckpt.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/marcello/ckpt"
+Repository = "https://github.com/marcello/ckpt"
+Issues = "https://github.com/marcello/ckpt/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["ckpt"]
