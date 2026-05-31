@@ -1,0 +1,97 @@
+# ──────────────────────────────────────────────
+# Python
+# ──────────────────────────────────────────────
+
+# Byte-compiled / optimised / DLL files
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+wheels/
+MANIFEST
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# ──────────────────────────────────────────────
+# Testing & Coverage
+# ──────────────────────────────────────────────
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+.cache/
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# ──────────────────────────────────────────────
+# Type checking / Linting
+# ──────────────────────────────────────────────
+.mypy_cache/
+.pytype/
+.ruff_cache/
+
+# ──────────────────────────────────────────────
+# IDEs & Editors
+# ──────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# ──────────────────────────────────────────────
+# OS generated files
+# ──────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+
+# ──────────────────────────────────────────────
+# Environments & Secrets
+# ──────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ──────────────────────────────────────────────
+# Jupyter / IPython
+# ──────────────────────────────────────────────
+.ipynb_checkpoints/
+profile_default/
+ipython_config.py
+
+# ──────────────────────────────────────────────
+# Documentation builds
+# ──────────────────────────────────────────────
+docs/_build/
+site/
+
+# ──────────────────────────────────────────────
+# Miscellaneous
+# ──────────────────────────────────────────────
+*.log
+*.bak
+*.tmp
