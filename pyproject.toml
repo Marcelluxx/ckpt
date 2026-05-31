@@ -34,8 +34,17 @@ dependencies = [
     "httpx",
 ]
 
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-mock>=3.10",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.3.0",
+]
+
 [project.scripts]
 ckpt = "ckpt.cli:app"
+ckpt-mcp = "ckpt.mcp_server:run_server"
 
 [project.urls]
 Homepage = "https://github.com/marcello/ckpt"

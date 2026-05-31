@@ -1,0 +1,69 @@
+# GitHub Actions Continuous Integration (CI) Workflow for ckpt
+#
+# This workflow runs code linters (ruff), format checks, and the full pytest suite
+# on every push or pull request targeted at the main branch.
+#
+# It utilizes Astral's high-performance 'uv' to manage Python versions, environments,
+# and package installations with optimal caching.
+
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+# Ensure subsequent pushes cancel active runs of the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test (Python ${{ matrix.python-version }} on ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Cross-platform testing matrix
+        os: [ubuntu-latest, windows-latest]
+        # Python version testing matrix
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      # Step 1: Check out repository code
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Python matching the matrix version
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # Step 3: Install Astral's uv setup action with automatic caching
+      - name: Install Astral's uv setup action
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          version: "latest"
+
+      # Step 4: Synchronize environment and install dependencies
+      # This reads pyproject.toml and installs all dependencies and groups
+      - name: Sync dependencies
+        run: uv sync --all-groups
+
+      # Step 5: Run code linters using Ruff check
+      - name: Run Ruff Linter
+        run: uv run ruff check
+
+      # Step 6: Run Ruff Formatter check to ensure PEP 8 compliant code
+      - name: Run Ruff Format Check
+        run: uv run ruff format --check
+
+      # Step 7: Run automated test suite using pytest
+      - name: Run pytest Suite
+        run: uv run pytest

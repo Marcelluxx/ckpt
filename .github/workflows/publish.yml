@@ -1,0 +1,49 @@
+# GitHub Actions Continuous Deployment (CD) Workflow for ckpt
+#
+# This workflow is triggered whenever a new release is published.
+# It checks out the code, sets up Astral's uv, builds standard distribution packages
+# (source distribution and wheel), and securely uploads them to PyPI using OIDC
+# Trusted Publishing (eliminating the need for static API tokens).
+
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    name: Build and Publish Package
+    runs-on: ubuntu-latest
+
+    # Required permissions for PyPI Trusted Publishing (OIDC ID Token exchange)
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      # Step 1: Check out repository code
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Step 3: Install Astral's uv setup action
+      - name: Install Astral's uv setup action
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      # Step 4: Build wheel and source distributions using uv build
+      - name: Build sdist and wheel distributions
+        run: uv build
+
+      # Step 5: Publish built assets to PyPI using Trusted Publishing (OIDC)
+      - name: Publish to PyPI
+        uses: pypa/github-action-pypi-publish@release/v1
+        # No password or API token specified; OIDC authentication is handled automatically
+        # by PyPI via the id-token: write permission granted above.
