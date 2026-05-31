@@ -119,9 +119,13 @@ def _secure_mkdir(path: Path) -> None:
 
     parts_to_create.reverse()
     for p in parts_to_create:
-        p.mkdir(exist_ok=True)
+        # Atomic creation with mode to prevent TOCTOU window
+        p.mkdir(mode=_DIR_MODE, exist_ok=True)
         if sys.platform != "win32":
-            p.chmod(_DIR_MODE)
+            try:
+                p.chmod(_DIR_MODE)
+            except OSError:
+                pass
 
 
 def _secure_write(path: Path, data: str) -> None:
@@ -138,8 +142,21 @@ def _secure_write(path: Path, data: str) -> None:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(data)
     else:
-        # On Windows, keep standard write_text
+        # On Windows, write standard write_text first
         path.write_text(data, encoding="utf-8")
+        # Restrict permissions via Windows ACLs (icacls) to the current user only
+        try:
+            import subprocess
+            username = os.environ.get("USERNAME")
+            if username:
+                # Remove inherited permissions and grant Full control to the owner only
+                subprocess.run(
+                    ["icacls", str(path), "/inheritance:r", "/grant:r", f"{username}:(F)"],
+                    capture_output=True,
+                    check=True,
+                )
+        except Exception as exc:
+            logger.warning("Could not secure permissions on Windows for %s: %s", path, exc)
 
 
 # ---------------------------------------------------------------------------
@@ -376,7 +393,7 @@ async def _generate_mental_map_ollama(
 
     try:
         return resp.json()["response"]
-    except (KeyError, json.JSONDecodeError) as exc:
+    except (KeyError, TypeError, json.JSONDecodeError) as exc:
         raise LLMError(f"Unexpected Ollama response format: {exc}") from exc
 
 
@@ -432,7 +449,7 @@ async def _generate_mental_map_gemini(
     try:
         data = resp.json()
         return data["candidates"][0]["content"]["parts"][0]["text"]
-    except (KeyError, IndexError, json.JSONDecodeError) as exc:
+    except (KeyError, IndexError, TypeError, json.JSONDecodeError) as exc:
         raise LLMError(f"Unexpected Gemini response format: {exc}") from exc
 
 

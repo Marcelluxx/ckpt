@@ -58,8 +58,7 @@ class Checkpoint(BaseModel):
 
     id: str = Field(
         default_factory=_generate_id,
-        min_length=8,
-        max_length=8,
+        pattern=r"^[a-f0-9]{8}$",
         description="8-character unique hash identifying the checkpoint.",
     )
     timestamp: datetime = Field(

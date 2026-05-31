@@ -141,36 +141,49 @@ class CheckpointSelector(App):
         """Build the widget tree."""
         yield Header()
 
-        self._checkpoints = list_checkpoints()
-
-        if not self._checkpoints:
-            yield Static(
-                "No checkpoints found.\n\n"
-                "Use [bold]ckpt save -m \"message\"[/] to create one.",
-                id="empty-state",
-                markup=True,
-            )
-        else:
-            with Horizontal(id="main"):
-                with Vertical(id="sidebar"):
-                    yield Static(" Checkpoints", id="sidebar-title")
-                    yield ListView(
-                        *[
-                            ListItem(SnapshotCard(cp))
-                            for cp in self._checkpoints
-                        ],
-                        id="snapshot-list",
-                    )
-                with Vertical(id="detail"):
-                    yield Static(" Mental Map", id="detail-title")
-                    with VerticalScroll(id="mental-map"):
-                        yield Markdown("", id="detail-content")
+        with Horizontal(id="main"):
+            with Vertical(id="sidebar"):
+                yield Static(" Checkpoints", id="sidebar-title")
+                yield ListView(id="snapshot-list")
+            with Vertical(id="detail"):
+                yield Static(" Mental Map", id="detail-title")
+                with VerticalScroll(id="mental-map"):
+                    yield Markdown("", id="detail-content")
 
         yield Footer()
 
     def on_mount(self) -> None:
-        """Set initial focus and load first checkpoint detail."""
-        if self._checkpoints:
+        """Load checkpoints asynchronously using a background worker."""
+        self.run_worker(self._load_data(), thread=True)
+
+    async def _load_data(self) -> None:
+        # list_checkpoints does disk reads, run it in a worker thread
+        self._checkpoints = list_checkpoints()
+        # Schedule the UI update on the main thread
+        self.call_after_refresh(self._populate_ui)
+
+    def _populate_ui(self) -> None:
+        try:
+            lv = self.query_one("#snapshot-list", ListView)
+        except NoMatches:
+            return
+
+        if not self._checkpoints:
+            main_layout = self.query_one("#main", Horizontal)
+            main_layout.display = False
+            self.mount(
+                Static(
+                    "No checkpoints found.\n\n"
+                    "Use [bold]ckpt save -m \"message\"[/] to create one.",
+                    id="empty-state",
+                    markup=True,
+                ),
+                after=main_layout
+            )
+        else:
+            for cp in self._checkpoints:
+                lv.append(ListItem(SnapshotCard(cp)))
+            lv.focus()
             self._show_detail(self._checkpoints[0])
 
     def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:

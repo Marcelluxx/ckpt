@@ -105,13 +105,24 @@ def get_last_commit_hash() -> str:
     """Return the full SHA-1 hash of the latest commit.
 
     Returns:
-        A 40-character hexadecimal commit hash.
+        A 40-character hexadecimal commit hash, or a fallback hash of all zeros
+        for newly initialized repositories that have no commits yet.
 
     Raises:
         GitNotFoundError: If git is not installed.
-        GitCommandError: If the command fails.
+        GitCommandError: If the command fails for a reason other than an empty repository.
     """
-    return _run_git("rev-parse", "HEAD")
+    try:
+        return _run_git("rev-parse", "HEAD")
+    except GitCommandError as exc:
+        # Check if we are inside a git repository but it has no commits yet
+        try:
+            is_inside = _run_git("rev-parse", "--is-inside-work-tree")
+            if is_inside == "true":
+                return "0000000000000000000000000000000000000000"
+        except Exception:
+            pass
+        raise exc
 
 
 def get_git_diff() -> str:
@@ -158,6 +169,8 @@ def _read_history_file(path: Path, limit: int) -> list[str]:
 
     Maintains a low memory footprint by streaming lines from the file
     and maintaining only the trailing lines in a double-ended queue.
+    Attempts multiple common encodings to cleanly parse history on various
+    operating systems (including Windows PowerShell UTF-16).
 
     Args:
         path: Absolute path to the history file.
@@ -166,17 +179,26 @@ def _read_history_file(path: Path, limit: int) -> list[str]:
     Returns:
         A list of the most recent commands, oldest first.
     """
-    try:
-        with path.open("r", encoding="utf-8", errors="replace") as f:
-            non_empty_lines = (line for line in f if line.strip())
-            tail = deque(non_empty_lines, maxlen=limit)
-            return [line.rstrip("\r\n") for line in tail]
-    except PermissionError:
-        logger.warning("Permission denied reading history file: %s", path)
-        return []
-    except OSError as exc:
-        logger.warning("Could not read history file %s: %s", path, exc)
-        return []
+    encodings = ["utf-8", "utf-16", "locale", "cp1252"]
+    for enc in encodings:
+        try:
+            encoding_name = sys.getdefaultencoding() if enc == "locale" else enc
+            with path.open("r", encoding=encoding_name, errors="replace") as f:
+                raw_lines = f.readlines()
+                cleaned_lines = []
+                for line in raw_lines:
+                    line = line.replace("\x00", "").strip()
+                    if line:
+                        cleaned_lines.append(line)
+                if cleaned_lines:
+                    tail = deque(cleaned_lines, maxlen=limit)
+                    return [line.rstrip("\r\n") for line in tail]
+        except (UnicodeDecodeError, PermissionError):
+            continue
+        except OSError as exc:
+            logger.warning("Could not read history file %s with %s: %s", path, enc, exc)
+            return []
+    return []
 
 
 def _clean_zsh_history(lines: list[str]) -> list[str]:
