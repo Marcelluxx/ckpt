@@ -44,6 +44,6 @@ jobs:
 
       # Step 5: Publish built assets to PyPI using Trusted Publishing (OIDC)
       - name: Publish to PyPI
-        uses: pypa/github-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@release/v1
         # No password or API token specified; OIDC authentication is handled automatically
         # by PyPI via the id-token: write permission granted above.
