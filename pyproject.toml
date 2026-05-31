@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ckpt"
+name = "ckpt-cli"
 version = "0.1.0"
 description = "A CLI utility for capturing and restoring development session checkpoints."
 readme = "README.md"

@@ -3,7 +3,7 @@
 <p align="center">
   <a href="https://github.com/Marcelluxx/ckpt/actions/workflows/tests.yml"><img src="https://github.com/Marcelluxx/ckpt/actions/workflows/tests.yml/badge.svg" alt="CI Status"></a>
   <a href="https://github.com/Marcelluxx/ckpt/releases"><img src="https://img.shields.io/github/v/release/Marcelluxx/ckpt?color=blue&logo=github" alt="GitHub Release"></a>
-  <a href="https://pypi.org/project/ckpt/"><img src="https://img.shields.io/pypi/v/ckpt?color=green&logo=pypi" alt="PyPI Version"></a>
+  <a href="https://pypi.org/project/ckpt-cli/"><img src="https://img.shields.io/pypi/v/ckpt-cli?color=green&logo=pypi" alt="PyPI Version"></a>
   <a href="https://github.com/Marcelluxx/ckpt/stargazers"><img src="https://img.shields.io/github/stars/Marcelluxx/ckpt?style=social" alt="GitHub Stars"></a>
   <a href="https://github.com/Marcelluxx/ckpt/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Marcelluxx/ckpt?color=lightgrey" alt="License"></a>
 </p>
@@ -25,18 +25,21 @@ Run `ckpt` immediately on any machine where [Astral's `uv`](https://github.com/a
 
 ```bash
 # Capture your current session checkpoint and generate an AI mental map
-uvx --from ckpt ckpt save -m "Extracted middleware validation logic"
+uvx --from ckpt-cli ckpt save -m "Extracted middleware validation logic"
 
 # Restore a prior state by its 8-character ID
-uvx --from ckpt ckpt restore a1b2c3d4
+uvx --from ckpt-cli ckpt restore a1b2c3d4
 ```
 
 ### Option B: Global CLI Installation
 Install `ckpt` permanently to your path:
 
 ```bash
-# Install ckpt globally
-uv tool install ckpt
+# Install globally via uv
+uv tool install ckpt-cli
+
+# Or install globally via pipx
+pipx install ckpt-cli
 
 # Initialize your AI provider (Ollama or Google Gemini)
 ckpt setup
@@ -94,7 +97,7 @@ Configure `ckpt` inside Cursor:
 3. Fill out the dialog:
    - **Name**: `checkpoint`
    - **Type**: `command`
-   - **Command**: `uvx --from ckpt ckpt-mcp`
+   - **Command**: `uvx --from ckpt-cli ckpt-mcp`
 
 ### 2. Claude Desktop Setup
 Add `ckpt` to your Claude Desktop configuration file:
@@ -109,7 +112,7 @@ Add `ckpt` to your Claude Desktop configuration file:
       "command": "uvx",
       "args": [
         "--from",
-        "ckpt",
+        "ckpt-cli",
         "ckpt-mcp"
       ]
     }
