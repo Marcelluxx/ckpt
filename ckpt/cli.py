@@ -109,9 +109,7 @@ def save(
     # --- Mental map (best-effort) ----------------------------------------
     try:
         _info("Generating mental map via LLM...")
-        mental_map = generate_mental_map_sync(
-            checkpoint.git_diff, checkpoint.history
-        )
+        mental_map = generate_mental_map_sync(checkpoint.git_diff, checkpoint.history)
         checkpoint = checkpoint.model_copy(update={"mental_map": mental_map})
         _success("Mental map generated.")
     except ConfigError:
@@ -162,8 +160,7 @@ def restore(
         _abort(f"Failed to load checkpoint: {exc}")
 
     _info(
-        f"Restoring [{checkpoint.id}] "
-        f"from {checkpoint.timestamp:%Y-%m-%d %H:%M:%S UTC}"
+        f"Restoring [{checkpoint.id}] from {checkpoint.timestamp:%Y-%m-%d %H:%M:%S UTC}"
     )
 
     # --- Revert unstaged changes via `git checkout -- .` ------------------

@@ -37,6 +37,7 @@ def mock_home_dir(tmp_path: Path, mocker: MockerFixture) -> Path:
 # Git Command Mock Tests
 # ---------------------------------------------------------------------------
 
+
 def test_run_git_success(mocker: MockerFixture) -> None:
     """Test successful execution of a git command."""
     mock_result = mocker.MagicMock()
@@ -74,7 +75,9 @@ def test_run_git_command_error(mocker: MockerFixture) -> None:
 
     with pytest.raises(GitCommandError) as exc_info:
         _run_git("status")
-    assert "git status failed (rc=128): fatal: not a git repository" in str(exc_info.value)
+    assert "git status failed (rc=128): fatal: not a git repository" in str(
+        exc_info.value
+    )
 
 
 def test_get_current_branch(mocker: MockerFixture) -> None:
@@ -85,7 +88,10 @@ def test_get_current_branch(mocker: MockerFixture) -> None:
 
 def test_get_last_commit_hash(mocker: MockerFixture) -> None:
     """Test get_last_commit_hash retrieves valid HEAD commit SHA."""
-    mocker.patch("ckpt.snapshot._run_git", return_value="e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4")
+    mocker.patch(
+        "ckpt.snapshot._run_git",
+        return_value="e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4",
+    )
     assert get_last_commit_hash() == "e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4"
 
 
@@ -111,7 +117,9 @@ def test_get_git_diff(mocker: MockerFixture) -> None:
 
 def test_get_modified_files(mocker: MockerFixture) -> None:
     """Test get_modified_files parses file paths correctly."""
-    mocker.patch("ckpt.snapshot._run_git", return_value="src/main.py\ntests/test_main.py\n")
+    mocker.patch(
+        "ckpt.snapshot._run_git", return_value="src/main.py\ntests/test_main.py\n"
+    )
     assert get_modified_files() == ["src/main.py", "tests/test_main.py"]
 
     # Empty case
@@ -122,6 +130,7 @@ def test_get_modified_files(mocker: MockerFixture) -> None:
 # ---------------------------------------------------------------------------
 # Shell History Mock Tests
 # ---------------------------------------------------------------------------
+
 
 def test_shell_history_win32(mocker: MockerFixture, mock_home_dir: Path) -> None:
     """Test PSReadLine ConsoleHost history extraction on Windows platform."""
@@ -135,7 +144,9 @@ def test_shell_history_win32(mocker: MockerFixture, mock_home_dir: Path) -> None
     ps_dir = appdata / "Microsoft" / "Windows" / "PowerShell" / "PSReadLine"
     ps_dir.mkdir(parents=True, exist_ok=True)
     history_file = ps_dir / "ConsoleHost_history.txt"
-    history_file.write_text("cd ckpt\r\ngit status\r\npytest tests/\r\n", encoding="utf-8")
+    history_file.write_text(
+        "cd ckpt\r\ngit status\r\npytest tests/\r\n", encoding="utf-8"
+    )
 
     history = get_shell_history(limit=2)
     assert history == ["git status", "pytest tests/"]
@@ -170,7 +181,9 @@ def test_shell_history_bash(mocker: MockerFixture, mock_home_dir: Path) -> None:
     assert history == ["cd test_dir", "ls -lh"]
 
 
-def test_shell_history_fallback_both(mocker: MockerFixture, mock_home_dir: Path) -> None:
+def test_shell_history_fallback_both(
+    mocker: MockerFixture, mock_home_dir: Path
+) -> None:
     """Test fallback when shell is unset, testing both well-known files."""
     mocker.patch("sys.platform", "linux")
     mocker.patch("os.environ", {})  # SHELL not set
@@ -202,6 +215,7 @@ def test_shell_history_empty_fallback(mocker: MockerFixture) -> None:
 # Snapshot Engine Assembly Tests
 # ---------------------------------------------------------------------------
 
+
 def test_compute_checkpoint_id() -> None:
     """Verify deterministic 8-character ID generation from git context."""
     branch = "feature/auth"
@@ -226,7 +240,9 @@ def test_create_snapshot(mocker: MockerFixture) -> None:
         return_value="e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4",
     )
     mocker.patch("ckpt.snapshot.get_git_diff", return_value="git diff sample")
-    mocker.patch("ckpt.snapshot.get_modified_files", return_value=["auth.py", "test_auth.py"])
+    mocker.patch(
+        "ckpt.snapshot.get_modified_files", return_value=["auth.py", "test_auth.py"]
+    )
     mocker.patch("ckpt.snapshot.get_shell_history", return_value=["git diff", "pytest"])
 
     checkpoint = create_snapshot(message="Implemented JWT")

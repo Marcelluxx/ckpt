@@ -51,7 +51,10 @@ def test_checkpoint_serialization_deserialization() -> None:
     assert checkpoint.message == "Implemented JWT middleware"
     assert checkpoint.git_diff == "diff --git a/auth.py ..."
     assert checkpoint.history == ["git add .", "pytest tests/"]
-    assert checkpoint.mental_map == "Working on auth flow; JWT validated, next: refresh tokens."
+    assert (
+        checkpoint.mental_map
+        == "Working on auth flow; JWT validated, next: refresh tokens."
+    )
     assert checkpoint.files_locked == ["src/auth.py", "tests/test_auth.py"]
 
     # Serialization to JSON
@@ -63,11 +66,11 @@ def test_checkpoint_serialization_deserialization() -> None:
 @pytest.mark.parametrize(
     "invalid_id",
     [
-        "a1b2c3d",      # 7 characters (too short)
-        "a1b2c3d4e",     # 9 characters (too long)
-        "a1b2c3dG",      # non-hex character 'G'
-        "a1b2-3d4",      # special characters
-        "",              # empty
+        "a1b2c3d",  # 7 characters (too short)
+        "a1b2c3d4e",  # 9 characters (too long)
+        "a1b2c3dG",  # non-hex character 'G'
+        "a1b2-3d4",  # special characters
+        "",  # empty
     ],
 )
 def test_checkpoint_id_pattern_validation(invalid_id: str) -> None:

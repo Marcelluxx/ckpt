@@ -226,6 +226,7 @@ def test_secure_write_win32(mocker: MockerFixture, mock_home_dir: Path) -> None:
 # LLM Async API Mock Tests
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_generate_mental_map_ollama(mocker: MockerFixture) -> None:
     """Test mental map generation using Ollama provider with mocked httpx.AsyncClient."""
@@ -251,18 +252,14 @@ async def test_generate_mental_map_ollama(mocker: MockerFixture) -> None:
 @pytest.mark.asyncio
 async def test_generate_mental_map_gemini(mocker: MockerFixture) -> None:
     """Test mental map generation using Gemini provider with mocked httpx.AsyncClient."""
-    save_config({"provider": "gemini", "model": "gemini-2.0-flash", "api_key": "secret_key"})
+    save_config(
+        {"provider": "gemini", "model": "gemini-2.0-flash", "api_key": "secret_key"}
+    )
 
     mock_response = mocker.MagicMock()
     mock_response.status_code = 200
     mock_response.json.return_value = {
-        "candidates": [
-            {
-                "content": {
-                    "parts": [{"text": "Gemini mental map response"}]
-                }
-            }
-        ]
+        "candidates": [{"content": {"parts": [{"text": "Gemini mental map response"}]}}]
     }
 
     mock_post = mocker.patch("httpx.AsyncClient.post", return_value=mock_response)
@@ -300,9 +297,12 @@ async def test_generate_mental_map_http_failure(mocker: MockerFixture) -> None:
     save_config({"provider": "ollama"})
 
     import httpx
+
     mocker.patch(
         "httpx.AsyncClient.post",
-        side_effect=httpx.HTTPStatusError("API Error", request=mocker.MagicMock(), response=mocker.MagicMock()),
+        side_effect=httpx.HTTPStatusError(
+            "API Error", request=mocker.MagicMock(), response=mocker.MagicMock()
+        ),
     )
 
     with pytest.raises(LLMError) as exc_info:

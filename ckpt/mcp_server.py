@@ -92,9 +92,7 @@ async def list_snapshots() -> str:
     lines: list[str] = [f"Found {len(checkpoints)} checkpoint(s):\n"]
     for cp in checkpoints:
         ts = cp.timestamp.strftime("%Y-%m-%d %H:%M:%S UTC")
-        lines.append(
-            f"  [{cp.id}]  {ts}  |  branch: {cp.branch}  |  {cp.message}"
-        )
+        lines.append(f"  [{cp.id}]  {ts}  |  branch: {cp.branch}  |  {cp.message}")
     return "\n".join(lines)
 
 
@@ -148,9 +146,7 @@ async def save_snapshot(message: str) -> str:
 
     try:
         loop = asyncio.get_running_loop()
-        checkpoint = await loop.run_in_executor(
-            None, create_snapshot, message.strip()
-        )
+        checkpoint = await loop.run_in_executor(None, create_snapshot, message.strip())
     except SnapshotError as exc:
         return f"[error] Snapshot capture failed: {exc}"
 

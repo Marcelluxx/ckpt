@@ -147,16 +147,25 @@ def _secure_write(path: Path, data: str) -> None:
         # Restrict permissions via Windows ACLs (icacls) to the current user only
         try:
             import subprocess
+
             username = os.environ.get("USERNAME")
             if username:
                 # Remove inherited permissions and grant Full control to the owner only
                 subprocess.run(
-                    ["icacls", str(path), "/inheritance:r", "/grant:r", f"{username}:(F)"],
+                    [
+                        "icacls",
+                        str(path),
+                        "/inheritance:r",
+                        "/grant:r",
+                        f"{username}:(F)",
+                    ],
                     capture_output=True,
                     check=True,
                 )
         except Exception as exc:
-            logger.warning("Could not secure permissions on Windows for %s: %s", path, exc)
+            logger.warning(
+                "Could not secure permissions on Windows for %s: %s", path, exc
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -202,15 +211,11 @@ def load_checkpoint(checkpoint_id: str) -> Checkpoint:
         StoreError: If the file exists but cannot be parsed.
     """
     if not _SAFE_ID_RE.match(checkpoint_id):
-        raise CheckpointNotFoundError(
-            f"No checkpoint found with id '{checkpoint_id}'"
-        )
+        raise CheckpointNotFoundError(f"No checkpoint found with id '{checkpoint_id}'")
 
     target = _snapshots_dir() / f"{checkpoint_id}.json"
     if not target.is_file():
-        raise CheckpointNotFoundError(
-            f"No checkpoint found with id '{checkpoint_id}'"
-        )
+        raise CheckpointNotFoundError(f"No checkpoint found with id '{checkpoint_id}'")
 
     try:
         raw = target.read_text(encoding="utf-8")
@@ -254,15 +259,11 @@ def delete_checkpoint(checkpoint_id: str) -> None:
         CheckpointNotFoundError: If no file matches the given ID or validation fails.
     """
     if not _SAFE_ID_RE.match(checkpoint_id):
-        raise CheckpointNotFoundError(
-            f"No checkpoint found with id '{checkpoint_id}'"
-        )
+        raise CheckpointNotFoundError(f"No checkpoint found with id '{checkpoint_id}'")
 
     target = _snapshots_dir() / f"{checkpoint_id}.json"
     if not target.is_file():
-        raise CheckpointNotFoundError(
-            f"No checkpoint found with id '{checkpoint_id}'"
-        )
+        raise CheckpointNotFoundError(f"No checkpoint found with id '{checkpoint_id}'")
     target.unlink()
     logger.info("Checkpoint deleted: %s", checkpoint_id)
 
@@ -387,9 +388,7 @@ async def _generate_mental_map_ollama(
             resp = await client.post(url, json=payload)
             resp.raise_for_status()
         except httpx.HTTPError as exc:
-            raise LLMError(
-                f"Ollama API request failed: {exc}"
-            ) from exc
+            raise LLMError(f"Ollama API request failed: {exc}") from exc
 
     try:
         return resp.json()["response"]
@@ -504,6 +503,7 @@ def generate_mental_map_sync(diff: str, history: list[str]) -> str:
     """
     try:
         asyncio.get_running_loop()
+
         # An event loop is already running in the current thread.
         # We cannot call asyncio.run here. Instead, offload to a background thread.
         def _run_in_thread() -> str:

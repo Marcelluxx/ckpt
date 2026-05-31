@@ -174,11 +174,11 @@ class CheckpointSelector(App):
             self.mount(
                 Static(
                     "No checkpoints found.\n\n"
-                    "Use [bold]ckpt save -m \"message\"[/] to create one.",
+                    'Use [bold]ckpt save -m "message"[/] to create one.',
                     id="empty-state",
                     markup=True,
                 ),
-                after=main_layout
+                after=main_layout,
             )
         else:
             for cp in self._checkpoints:
@@ -235,13 +235,9 @@ class CheckpointSelector(App):
 
         lines: list[str] = []
         lines.append(f"**ID:** `{checkpoint.id}`  ")
-        lines.append(
-            f"**Time:** {checkpoint.timestamp:%Y-%m-%d %H:%M:%S UTC}  "
-        )
+        lines.append(f"**Time:** {checkpoint.timestamp:%Y-%m-%d %H:%M:%S UTC}  ")
         lines.append(f"**Branch:** `{checkpoint.branch}`  ")
-        lines.append(
-            f"**Commit:** `{checkpoint.commit_hash[:12]}`  "
-        )
+        lines.append(f"**Commit:** `{checkpoint.commit_hash[:12]}`  ")
         lines.append(f"**Message:** {checkpoint.message}")
         lines.append("")
 
@@ -256,8 +252,7 @@ class CheckpointSelector(App):
             lines.append(checkpoint.mental_map)
         else:
             lines.append(
-                "*No mental map attached. "
-                "Configure an LLM via `ckpt setup` to enable.*"
+                "*No mental map attached. Configure an LLM via `ckpt setup` to enable.*"
             )
 
         md_widget.update("\n".join(lines))

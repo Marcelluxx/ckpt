@@ -70,9 +70,7 @@ def _run_git(*args: str) -> str:
         )
     except FileNotFoundError as exc:
         logger.error("git binary not found on PATH")
-        raise GitNotFoundError(
-            "git is not installed or not available on PATH"
-        ) from exc
+        raise GitNotFoundError("git is not installed or not available on PATH") from exc
     except subprocess.CalledProcessError as exc:
         stderr = (exc.stderr or "").strip()
         logger.error("git command failed: %s — %s", cmd, stderr)
