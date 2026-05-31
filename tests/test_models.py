@@ -34,18 +34,6 @@ def test_checkpoint_defaults() -> None:
 
 def test_checkpoint_serialization_deserialization() -> None:
     """Test that the Checkpoint model serializes and deserializes JSON correctly."""
-    data = {
-        "id": "a1b2c3d4",
-        "timestamp": "2026-06-01T01:11:43Z",
-        "branch": "feature/auth",
-        "commit_hash": "e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4",
-        "message": "Implemented JWT middleware",
-        "git_diff": "diff --git a/auth.py ...",
-        "history": ["git add .", "pytest tests/"],
-        "mental_map": "Working on auth flow; JWT validated, next: refresh tokens.",
-        "files_locked": ["src/auth.py", "tests/test_auth.py"],
-    }
-
     # Deserialization from JSON string
     json_str = (
         '{"id": "a1b2c3d4", "timestamp": "2026-06-01T01:11:43Z", "branch": "feature/auth", '
