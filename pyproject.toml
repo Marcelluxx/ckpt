@@ -47,9 +47,9 @@ ckpt = "ckpt.cli:app"
 ckpt-mcp = "ckpt.mcp_server:run_server"
 
 [project.urls]
-Homepage = "https://github.com/marcello/ckpt"
-Repository = "https://github.com/marcello/ckpt"
-Issues = "https://github.com/marcello/ckpt/issues"
+Homepage = "https://github.com/Marcelluxx/ckpt"
+Repository = "https://github.com/Marcelluxx/ckpt"
+Issues = "https://github.com/Marcelluxx/ckpt/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["ckpt"]

@@ -1,11 +1,11 @@
 # `ckpt` — *The State Saver & Context Restorer for AI coding sessions.*
 
 <p align="center">
-  <a href="https://github.com/marcello/ckpt/actions/workflows/tests.yml"><img src="https://github.com/marcello/ckpt/actions/workflows/tests.yml/badge.svg" alt="CI Status"></a>
-  <a href="https://github.com/marcello/ckpt/releases"><img src="https://img.shields.io/github/v/release/marcello/ckpt?color=blue&logo=github" alt="GitHub Release"></a>
+  <a href="https://github.com/Marcelluxx/ckpt/actions/workflows/tests.yml"><img src="https://github.com/Marcelluxx/ckpt/actions/workflows/tests.yml/badge.svg" alt="CI Status"></a>
+  <a href="https://github.com/Marcelluxx/ckpt/releases"><img src="https://img.shields.io/github/v/release/Marcelluxx/ckpt?color=blue&logo=github" alt="GitHub Release"></a>
   <a href="https://pypi.org/project/ckpt/"><img src="https://img.shields.io/pypi/v/ckpt?color=green&logo=pypi" alt="PyPI Version"></a>
-  <a href="https://github.com/marcello/ckpt/stargazers"><img src="https://img.shields.io/github/stars/marcello/ckpt?style=social" alt="GitHub Stars"></a>
-  <a href="https://github.com/marcello/ckpt/blob/main/LICENSE"><img src="https://img.shields.io/github/license/marcello/ckpt?color=lightgrey" alt="License"></a>
+  <a href="https://github.com/Marcelluxx/ckpt/stargazers"><img src="https://img.shields.io/github/stars/Marcelluxx/ckpt?style=social" alt="GitHub Stars"></a>
+  <a href="https://github.com/Marcelluxx/ckpt/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Marcelluxx/ckpt?color=lightgrey" alt="License"></a>
 </p>
 
 Are your AI coding sessions suffering from **context bloat** and **session amnesia**? 
