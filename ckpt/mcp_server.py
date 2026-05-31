@@ -10,12 +10,12 @@ communicates over **stdio** transport by default.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 
 from mcp.server.fastmcp import FastMCP
 
-from ckpt.models import Checkpoint
 from ckpt.snapshot import SnapshotError, create_snapshot
 from ckpt.store import (
     CheckpointNotFoundError,
@@ -69,7 +69,7 @@ def _validate_snapshot_id(snapshot_id: str) -> str:
 
 
 @mcp.tool()
-def list_snapshots() -> str:
+async def list_snapshots() -> str:
     """List all saved checkpoints.
 
     Scans ``~/.config/ckpt/snapshots/`` and returns a formatted summary
@@ -81,7 +81,8 @@ def list_snapshots() -> str:
         message indicating that none exist.
     """
     try:
-        checkpoints = list_checkpoints()
+        loop = asyncio.get_running_loop()
+        checkpoints = await loop.run_in_executor(None, list_checkpoints)
     except StoreError as exc:
         return f"[error] Failed to list checkpoints: {exc}"
 
@@ -98,7 +99,7 @@ def list_snapshots() -> str:
 
 
 @mcp.tool()
-def get_snapshot_by_id(snapshot_id: str) -> str:
+async def get_snapshot_by_id(snapshot_id: str) -> str:
     """Fetch the full JSON contents of a checkpoint by its ID.
 
     The ID is validated against path-traversal patterns before any
@@ -117,7 +118,8 @@ def get_snapshot_by_id(snapshot_id: str) -> str:
         return f"[error] {exc}"
 
     try:
-        checkpoint = load_checkpoint(safe_id)
+        loop = asyncio.get_running_loop()
+        checkpoint = await loop.run_in_executor(None, load_checkpoint, safe_id)
     except CheckpointNotFoundError:
         return f"[error] No checkpoint found with id '{safe_id}'."
     except StoreError as exc:
@@ -127,7 +129,7 @@ def get_snapshot_by_id(snapshot_id: str) -> str:
 
 
 @mcp.tool()
-def save_snapshot(message: str) -> str:
+async def save_snapshot(message: str) -> str:
     """Capture the current development session state as a new checkpoint.
 
     Programmatically executes the snapshot logic: reads the active git
@@ -145,12 +147,15 @@ def save_snapshot(message: str) -> str:
         return "[error] A non-empty message is required."
 
     try:
-        checkpoint = create_snapshot(message.strip())
+        loop = asyncio.get_running_loop()
+        checkpoint = await loop.run_in_executor(
+            None, create_snapshot, message.strip()
+        )
     except SnapshotError as exc:
         return f"[error] Snapshot capture failed: {exc}"
 
     try:
-        path = save_checkpoint(checkpoint)
+        path = await loop.run_in_executor(None, save_checkpoint, checkpoint)
     except StoreError as exc:
         return f"[error] Failed to persist checkpoint: {exc}"
 

@@ -9,10 +9,11 @@ Ollama or Google Gemini.
 from __future__ import annotations
 
 import asyncio
+import concurrent.futures
 import json
 import logging
 import os
-import stat
+import re
 import sys
 from pathlib import Path
 
@@ -21,6 +22,13 @@ import httpx
 from ckpt.models import Checkpoint
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Security & Safety Regex
+# ---------------------------------------------------------------------------
+
+_SAFE_ID_RE = re.compile(r"^[a-f0-9]{1,64}$")
+"""Strict validation regex for checkpoint IDs to prevent path traversal."""
 
 # ---------------------------------------------------------------------------
 # Custom exceptions
@@ -84,15 +92,36 @@ def _config_file() -> Path:
 
 
 def _secure_mkdir(path: Path) -> None:
-    """Create a directory with strict permissions, including parents.
+    """Create a directory with strict permissions, securing parents up the chain.
+
+    Only parent folders created along the chain up to (but excluding) standard
+    system folders like the Home directory or ``~/.config/`` are secured with
+    strict permissions.
 
     Args:
         path: Directory path to create.
     """
-    path.mkdir(parents=True, exist_ok=True)
-    # On POSIX systems enforce restrictive mode; on Windows this is a no-op.
-    if sys.platform != "win32":
-        path.chmod(_DIR_MODE)
+    home = Path.home().resolve()
+    dot_config = (home / ".config").resolve()
+
+    # Ensure ~/.config exists if it doesn't already
+    if not dot_config.exists():
+        dot_config.mkdir(parents=True, exist_ok=True)
+
+    resolved_path = path.resolve()
+    parts_to_create = []
+    curr = resolved_path
+    while True:
+        if curr == home or curr == dot_config or curr == curr.parent:
+            break
+        parts_to_create.append(curr)
+        curr = curr.parent
+
+    parts_to_create.reverse()
+    for p in parts_to_create:
+        p.mkdir(exist_ok=True)
+        if sys.platform != "win32":
+            p.chmod(_DIR_MODE)
 
 
 def _secure_write(path: Path, data: str) -> None:
@@ -103,9 +132,14 @@ def _secure_write(path: Path, data: str) -> None:
         data: UTF-8 string content to write.
     """
     _secure_mkdir(path.parent)
-    path.write_text(data, encoding="utf-8")
     if sys.platform != "win32":
-        path.chmod(_FILE_MODE)
+        # Fix TOCTOU race condition: open the file with strict creation permissions
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, _FILE_MODE)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(data)
+    else:
+        # On Windows, keep standard write_text
+        path.write_text(data, encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -147,9 +181,14 @@ def load_checkpoint(checkpoint_id: str) -> Checkpoint:
         A reconstructed :class:`Checkpoint` instance.
 
     Raises:
-        CheckpointNotFoundError: If no file matches the given ID.
+        CheckpointNotFoundError: If no file matches the given ID or validation fails.
         StoreError: If the file exists but cannot be parsed.
     """
+    if not _SAFE_ID_RE.match(checkpoint_id):
+        raise CheckpointNotFoundError(
+            f"No checkpoint found with id '{checkpoint_id}'"
+        )
+
     target = _snapshots_dir() / f"{checkpoint_id}.json"
     if not target.is_file():
         raise CheckpointNotFoundError(
@@ -195,8 +234,13 @@ def delete_checkpoint(checkpoint_id: str) -> None:
         checkpoint_id: The unique identifier of the checkpoint.
 
     Raises:
-        CheckpointNotFoundError: If no file matches the given ID.
+        CheckpointNotFoundError: If no file matches the given ID or validation fails.
     """
+    if not _SAFE_ID_RE.match(checkpoint_id):
+        raise CheckpointNotFoundError(
+            f"No checkpoint found with id '{checkpoint_id}'"
+        )
+
     target = _snapshots_dir() / f"{checkpoint_id}.json"
     if not target.is_file():
         raise CheckpointNotFoundError(
@@ -211,7 +255,7 @@ def delete_checkpoint(checkpoint_id: str) -> None:
 # ---------------------------------------------------------------------------
 
 
-def load_config() -> dict:
+def load_config() -> dict[str, str]:
     """Read the LLM configuration from ``~/.config/ckpt/config.json``.
 
     Expected schema::
@@ -239,13 +283,13 @@ def load_config() -> dict:
     except (OSError, json.JSONDecodeError) as exc:
         raise ConfigError(f"Invalid config file: {exc}") from exc
 
-    if "provider" not in config:
+    if not isinstance(config, dict) or "provider" not in config:
         raise ConfigError("Config missing required key 'provider'.")
 
-    return config
+    return {str(k): str(v) for k, v in config.items()}
 
 
-def save_config(config: dict) -> Path:
+def save_config(config: dict[str, str]) -> Path:
     """Write the LLM configuration to disk with secure permissions.
 
     Args:
@@ -358,7 +402,7 @@ async def _generate_mental_map_gemini(
     """
     url = (
         f"https://generativelanguage.googleapis.com/v1beta/"
-        f"models/{model}:generateContent?key={api_key}"
+        f"models/{model}:generateContent"
     )
     payload = {
         "contents": [
@@ -373,7 +417,10 @@ async def _generate_mental_map_gemini(
             "temperature": 0.4,
         },
     }
-    headers = {"Content-Type": "application/json"}
+    headers = {
+        "Content-Type": "application/json",
+        "x-goog-api-key": api_key,
+    }
 
     async with httpx.AsyncClient(timeout=60.0) as client:
         try:
@@ -427,6 +474,10 @@ def generate_mental_map_sync(diff: str, history: list[str]) -> str:
     Manages the async event loop boundary so callers (e.g. Typer commands)
     do not need to handle ``asyncio`` directly.
 
+    If an event loop is already running (e.g., in Jupyter notebooks or Textual),
+    offloads the async execution safely to a background thread to prevent nested
+    event loop crashes.
+
     Args:
         diff: Raw git diff output.
         history: Recent shell commands.
@@ -434,4 +485,16 @@ def generate_mental_map_sync(diff: str, history: list[str]) -> str:
     Returns:
         A Markdown-formatted mental map string.
     """
-    return asyncio.run(generate_mental_map(diff, history))
+    try:
+        asyncio.get_running_loop()
+        # An event loop is already running in the current thread.
+        # We cannot call asyncio.run here. Instead, offload to a background thread.
+        def _run_in_thread() -> str:
+            return asyncio.run(generate_mental_map(diff, history))
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(_run_in_thread)
+            return future.result()
+    except RuntimeError:
+        # No event loop is running; safe to run directly.
+        return asyncio.run(generate_mental_map(diff, history))

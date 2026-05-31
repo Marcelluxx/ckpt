@@ -13,6 +13,8 @@ import logging
 import os
 import re
 import subprocess
+import sys
+from collections import deque
 from pathlib import Path
 
 from ckpt.models import Checkpoint
@@ -154,6 +156,9 @@ _ZSH_META_RE = re.compile(r"^:\s*\d+:\d+;")
 def _read_history_file(path: Path, limit: int) -> list[str]:
     """Read the last *limit* non-empty lines from a history file.
 
+    Maintains a low memory footprint by streaming lines from the file
+    and maintaining only the trailing lines in a double-ended queue.
+
     Args:
         path: Absolute path to the history file.
         limit: Maximum number of history entries to return.
@@ -162,17 +167,16 @@ def _read_history_file(path: Path, limit: int) -> list[str]:
         A list of the most recent commands, oldest first.
     """
     try:
-        raw_lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+        with path.open("r", encoding="utf-8", errors="replace") as f:
+            non_empty_lines = (line for line in f if line.strip())
+            tail = deque(non_empty_lines, maxlen=limit)
+            return [line.rstrip("\r\n") for line in tail]
     except PermissionError:
         logger.warning("Permission denied reading history file: %s", path)
         return []
     except OSError as exc:
         logger.warning("Could not read history file %s: %s", path, exc)
         return []
-
-    # Filter empty lines and return the tail.
-    lines = [ln for ln in raw_lines if ln.strip()]
-    return lines[-limit:]
 
 
 def _clean_zsh_history(lines: list[str]) -> list[str]:
@@ -205,6 +209,7 @@ def get_shell_history(limit: int = 5) -> list[str]:
       metadata timestamps.
     * **Bash** — reads ``~/.bash_history`` as-is.
 
+    On Windows, it checks the PowerShell PSReadLine history file.
     On Windows or when ``$SHELL`` is unset, the function falls back to
     checking both well-known history files in order of preference.
 
@@ -215,16 +220,33 @@ def get_shell_history(limit: int = 5) -> list[str]:
         A list of the most recent shell commands (oldest first).
         Returns an empty list if no history can be located.
     """
+    if sys.platform == "win32":
+        appdata = os.environ.get("APPDATA")
+        if appdata:
+            ps_history = (
+                Path(appdata)
+                / "Microsoft"
+                / "Windows"
+                / "PowerShell"
+                / "PSReadLine"
+                / "ConsoleHost_history.txt"
+            )
+            if ps_history.is_file():
+                lines = _read_history_file(ps_history, limit)
+                if lines:
+                    return lines[-limit:]
+
     home = Path.home()
     shell = os.environ.get("SHELL", "")
 
     # Determine which history file(s) to try, in priority order.
+    candidates: list[tuple[Path, bool]]
     if "zsh" in shell:
         candidates = [(home / ".zsh_history", True)]
     elif "bash" in shell:
         candidates = [(home / ".bash_history", False)]
     else:
-        # Unknown or unset (common on Windows) — try both.
+        # Unknown or unset (common on Windows if not PowerShell) — try both.
         candidates = [
             (home / ".zsh_history", True),
             (home / ".bash_history", False),

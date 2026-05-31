@@ -10,7 +10,7 @@ Provides three commands:
 from __future__ import annotations
 
 import subprocess
-import sys
+from typing import NoReturn
 
 import typer
 
@@ -43,7 +43,7 @@ app = typer.Typer(
 # ---------------------------------------------------------------------------
 
 
-def _abort(message: str, code: int = 1) -> None:
+def _abort(message: str, code: int = 1) -> NoReturn:
     """Print an error message in red and exit.
 
     Args:
@@ -192,6 +192,8 @@ def restore(
                 text=True,
             )
             _success("Stored diff re-applied.")
+        except FileNotFoundError:
+            _abort("git is not installed or not on PATH.")
         except subprocess.CalledProcessError as exc:
             stderr = (exc.stderr or "").strip()
             typer.secho(
