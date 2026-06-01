@@ -7,7 +7,11 @@ from datetime import datetime, timedelta, timezone
 from pytest_mock import MockerFixture
 
 from ckpt.models import Checkpoint
-from ckpt.menu import format_relative_time, select_checkpoint_interactive, select_option_interactive
+from ckpt.menu import (
+    format_relative_time,
+    select_checkpoint_interactive,
+    select_option_interactive,
+)
 
 
 def test_format_relative_time() -> None:
@@ -17,7 +21,7 @@ def test_format_relative_time() -> None:
     # 1. Just now
     assert format_relative_time(now - timedelta(seconds=10)) == "just now"
     assert format_relative_time(now - timedelta(seconds=59)) == "just now"
-    
+
     # Clock drift / slight future
     assert format_relative_time(now + timedelta(seconds=2)) == "just now"
 

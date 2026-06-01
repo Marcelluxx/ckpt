@@ -279,9 +279,7 @@ def setup() -> None:
 
     if provider in ("gemini", "openrouter"):
         prompt_label = (
-            "Google AI Studio API key"
-            if provider == "gemini"
-            else "OpenRouter API key"
+            "Google AI Studio API key" if provider == "gemini" else "OpenRouter API key"
         )
         api_key = typer.prompt(
             prompt_label,

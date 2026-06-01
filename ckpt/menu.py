@@ -68,7 +68,7 @@ else:
         fd = sys.stdin.fileno()
         if not sys.stdin.isatty():
             return ""
-        
+
         old_settings = termios.tcgetattr(fd)
         try:
             tty.setraw(fd)
@@ -101,6 +101,7 @@ else:
 # ---------------------------------------------------------------------------
 # Utility Helpers
 # ---------------------------------------------------------------------------
+
 
 def format_relative_time(timestamp: datetime) -> str:
     """Format a timezone-aware timestamp into a human-readable relative time string.
@@ -158,6 +159,7 @@ def _clear_lines(n: int) -> None:
 # Interactive Selection Menu
 # ---------------------------------------------------------------------------
 
+
 def select_checkpoint_interactive(checkpoints: list[Checkpoint]) -> str | None:
     """Display an interactive terminal menu for choosing a checkpoint.
 
@@ -206,7 +208,11 @@ def select_checkpoint_interactive(checkpoints: list[Checkpoint]) -> str | None:
                     max_msg_len = cols - 2 - 33 - 1 - len(branch_part)
                     msg = cp.message
                     if len(msg) > max_msg_len:
-                        msg = msg[:max_msg_len - 3] + "..." if max_msg_len > 3 else msg[:max_msg_len]
+                        msg = (
+                            msg[: max_msg_len - 3] + "..."
+                            if max_msg_len > 3
+                            else msg[:max_msg_len]
+                        )
 
                     if idx == selected_idx:
                         # Highlighted/selected style
@@ -223,13 +229,19 @@ def select_checkpoint_interactive(checkpoints: list[Checkpoint]) -> str | None:
                         msg_str = f"\033[2;37m{msg}\033[0m"  # Dim Gray
                         branch_str = f"\033[2;37m{branch_part}\033[0m"  # Dim Gray
 
-                    lines.append(f"{indicator} {cp_id}  {time_str}  -  {msg_str} {branch_str}")
+                    lines.append(
+                        f"{indicator} {cp_id}  {time_str}  -  {msg_str} {branch_str}"
+                    )
                 else:
                     # Hide branch to save space
                     max_msg_len = cols - 2 - 33
                     msg = cp.message
                     if len(msg) > max_msg_len:
-                        msg = msg[:max_msg_len - 3] + "..." if max_msg_len > 3 else msg[:max_msg_len]
+                        msg = (
+                            msg[: max_msg_len - 3] + "..."
+                            if max_msg_len > 3
+                            else msg[:max_msg_len]
+                        )
 
                     if idx == selected_idx:
                         # Highlighted/selected style
@@ -251,7 +263,11 @@ def select_checkpoint_interactive(checkpoints: list[Checkpoint]) -> str | None:
                 footer_text = f"... and {extra_count} more checkpoints (specify ID directly to restore)"
                 max_footer_len = cols - 5
                 if len(footer_text) > max_footer_len:
-                    footer_text = footer_text[:max_footer_len - 3] + "..." if max_footer_len > 3 else footer_text[:max_footer_len]
+                    footer_text = (
+                        footer_text[: max_footer_len - 3] + "..."
+                        if max_footer_len > 3
+                        else footer_text[:max_footer_len]
+                    )
                 lines.append(f"  \033[2;37m{footer_text}\033[0m")
 
             # Draw lines
@@ -313,7 +329,7 @@ def select_option_interactive(options: list[tuple[str, str]], title: str) -> str
             # Title with Cyan color
             title_text = f"\033[1;36m{title}\033[0m"
             if len(title_text) > cols:
-                title_text = title_text[:cols - 3] + "..."
+                title_text = title_text[: cols - 3] + "..."
             lines.append(title_text)
 
             for idx, (val, label) in enumerate(options):
@@ -321,7 +337,11 @@ def select_option_interactive(options: list[tuple[str, str]], title: str) -> str
                 max_label_len = cols - 4
                 disp_label = label
                 if len(disp_label) > max_label_len:
-                    disp_label = disp_label[:max_label_len - 3] + "..." if max_label_len > 3 else disp_label[:max_label_len]
+                    disp_label = (
+                        disp_label[: max_label_len - 3] + "..."
+                        if max_label_len > 3
+                        else disp_label[:max_label_len]
+                    )
 
                 if idx == selected_idx:
                     indicator = "\033[1;35m❯\033[0m"  # Bold Magenta

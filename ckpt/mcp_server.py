@@ -160,7 +160,9 @@ async def save_snapshot(message: str, mental_map: str | None = None) -> str:
         checkpoint = checkpoint.model_copy(update={"mental_map": mental_map.strip()})
     else:
         try:
-            generated_map = await generate_mental_map(checkpoint.git_diff, checkpoint.history)
+            generated_map = await generate_mental_map(
+                checkpoint.git_diff, checkpoint.history
+            )
             checkpoint = checkpoint.model_copy(update={"mental_map": generated_map})
         except (ConfigError, LLMError) as exc:
             logger.warning("LLM mental map generation skipped or failed: %s", exc)

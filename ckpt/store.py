@@ -478,7 +478,7 @@ async def _generate_mental_map_openrouter(
         "model": model,
         "messages": [
             {"role": "system", "content": _SYSTEM_PROMPT},
-            {"role": "user", "content": _build_user_prompt(diff, history)}
+            {"role": "user", "content": _build_user_prompt(diff, history)},
         ],
         "temperature": 0.4,
     }

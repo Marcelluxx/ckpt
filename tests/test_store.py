@@ -253,7 +253,11 @@ async def test_generate_mental_map_ollama(mocker: MockerFixture) -> None:
 async def test_generate_mental_map_gemini(mocker: MockerFixture) -> None:
     """Test mental map generation using Gemini provider with mocked httpx.AsyncClient."""
     save_config(
-        {"provider": "gemini", "model": "gemini-3.1-flash-lite", "api_key": "secret_key"}
+        {
+            "provider": "gemini",
+            "model": "gemini-3.1-flash-lite",
+            "api_key": "secret_key",
+        }
     )
 
     mock_response = mocker.MagicMock()
@@ -286,7 +290,11 @@ async def test_generate_mental_map_gemini_missing_key() -> None:
 async def test_generate_mental_map_openrouter(mocker: MockerFixture) -> None:
     """Test mental map generation using OpenRouter provider with mocked httpx.AsyncClient."""
     save_config(
-        {"provider": "openrouter", "model": "meta-llama/llama-3-8b-instruct", "api_key": "or_secret_key"}
+        {
+            "provider": "openrouter",
+            "model": "meta-llama/llama-3-8b-instruct",
+            "api_key": "or_secret_key",
+        }
     )
 
     mock_response = mocker.MagicMock()
