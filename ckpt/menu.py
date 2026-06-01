@@ -185,33 +185,74 @@ def select_checkpoint_interactive(checkpoints: list[Checkpoint]) -> str | None:
 
     _hide_cursor()
     try:
+        import shutil
+
         while True:
+            # Query terminal size to dynamically prevent wrapping
+            cols, _ = shutil.get_terminal_size()
+
             # Render menu
             lines = []
             for idx, cp in enumerate(menu_items):
                 rel_time = format_relative_time(cp.timestamp)
-                if idx == selected_idx:
-                    # Highlighted/selected style
-                    indicator = "\033[1;35m❯\033[0m"  # Bold Magenta
-                    cp_id = f"\033[1;36m[{cp.id}]\033[0m"  # Bold Cyan
-                    time_str = f"\033[1;33m{rel_time:<14}\033[0m"  # Bold Yellow
-                    msg_str = f"\033[1;37m{cp.message}\033[0m"  # Bold White
-                    branch_str = f"\033[1;34m(branch: {cp.branch})\033[0m"  # Bold Blue
+                branch_part = f"(branch: {cp.branch})"
+
+                # Calculate visible width limit
+                # We need at least 15 chars for message, the prefix of 33, and the branch part (plus 2 margin)
+                min_width_for_branch = 33 + 15 + 1 + len(branch_part) + 2
+
+                if cols >= min_width_for_branch:
+                    # Show branch
+                    max_msg_len = cols - 2 - 33 - 1 - len(branch_part)
+                    msg = cp.message
+                    if len(msg) > max_msg_len:
+                        msg = msg[:max_msg_len - 3] + "..." if max_msg_len > 3 else msg[:max_msg_len]
+
+                    if idx == selected_idx:
+                        # Highlighted/selected style
+                        indicator = "\033[1;35m❯\033[0m"  # Bold Magenta
+                        cp_id = f"\033[1;36m[{cp.id}]\033[0m"  # Bold Cyan
+                        time_str = f"\033[1;33m{rel_time:<14}\033[0m"  # Bold Yellow
+                        msg_str = f"\033[1;37m{msg}\033[0m"  # Bold White
+                        branch_str = f"\033[1;34m{branch_part}\033[0m"  # Bold Blue
+                    else:
+                        # Dimmed/unselected style
+                        indicator = " "
+                        cp_id = f"\033[2;37m[{cp.id}]\033[0m"  # Dim Gray
+                        time_str = f"\033[2;37m{rel_time:<14}\033[0m"  # Dim Gray
+                        msg_str = f"\033[2;37m{msg}\033[0m"  # Dim Gray
+                        branch_str = f"\033[2;37m{branch_part}\033[0m"  # Dim Gray
+
                     lines.append(f"{indicator} {cp_id}  {time_str}  -  {msg_str} {branch_str}")
                 else:
-                    # Dimmed/unselected style
-                    indicator = " "
-                    cp_id = f"\033[2;37m[{cp.id}]\033[0m"  # Dim Gray
-                    time_str = f"\033[2;37m{rel_time:<14}\033[0m"  # Dim Gray
-                    msg_str = f"\033[2;37m{cp.message}\033[0m"  # Dim Gray
-                    branch_str = f"\033[2;37m(branch: {cp.branch})\033[0m"  # Dim Gray
-                    lines.append(f"{indicator} {cp_id}  {time_str}  -  {msg_str} {branch_str}")
+                    # Hide branch to save space
+                    max_msg_len = cols - 2 - 33
+                    msg = cp.message
+                    if len(msg) > max_msg_len:
+                        msg = msg[:max_msg_len - 3] + "..." if max_msg_len > 3 else msg[:max_msg_len]
+
+                    if idx == selected_idx:
+                        # Highlighted/selected style
+                        indicator = "\033[1;35m❯\033[0m"  # Bold Magenta
+                        cp_id = f"\033[1;36m[{cp.id}]\033[0m"  # Bold Cyan
+                        time_str = f"\033[1;33m{rel_time:<14}\033[0m"  # Bold Yellow
+                        msg_str = f"\033[1;37m{msg}\033[0m"  # Bold White
+                    else:
+                        # Dimmed/unselected style
+                        indicator = " "
+                        cp_id = f"\033[2;37m[{cp.id}]\033[0m"  # Dim Gray
+                        time_str = f"\033[2;37m{rel_time:<14}\033[0m"  # Dim Gray
+                        msg_str = f"\033[2;37m{msg}\033[0m"  # Dim Gray
+
+                    lines.append(f"{indicator} {cp_id}  {time_str}  -  {msg_str}")
 
             if truncated:
                 extra_count = len(checkpoints) - max_display
-                lines.append(
-                    f"  \033[2;37m... and {extra_count} more checkpoints (specify ID directly to restore)\033[0m"
-                )
+                footer_text = f"... and {extra_count} more checkpoints (specify ID directly to restore)"
+                max_footer_len = cols - 5
+                if len(footer_text) > max_footer_len:
+                    footer_text = footer_text[:max_footer_len - 3] + "..." if max_footer_len > 3 else footer_text[:max_footer_len]
+                lines.append(f"  \033[2;37m{footer_text}\033[0m")
 
             # Draw lines
             sys.stdout.write("\n".join(lines) + "\n")
