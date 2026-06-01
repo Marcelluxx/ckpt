@@ -52,6 +52,7 @@ def test_run_git_success(mocker: MockerFixture) -> None:
         capture_output=True,
         text=True,
         check=True,
+        stdin=subprocess.DEVNULL,
     )
 
 

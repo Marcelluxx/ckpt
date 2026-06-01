@@ -19,7 +19,10 @@ from mcp.server.fastmcp import FastMCP
 from ckpt.snapshot import SnapshotError, create_snapshot
 from ckpt.store import (
     CheckpointNotFoundError,
+    ConfigError,
+    LLMError,
     StoreError,
+    generate_mental_map,
     list_checkpoints,
     load_checkpoint,
     save_checkpoint,
@@ -127,7 +130,7 @@ async def get_snapshot_by_id(snapshot_id: str) -> str:
 
 
 @mcp.tool()
-async def save_snapshot(message: str) -> str:
+async def save_snapshot(message: str, mental_map: str | None = None) -> str:
     """Capture the current development session state as a new checkpoint.
 
     Programmatically executes the snapshot logic: reads the active git
@@ -136,6 +139,9 @@ async def save_snapshot(message: str) -> str:
 
     Args:
         message: A description of the current session state or intent.
+        mental_map: Optional pre-generated LLM mental map summary. If provided,
+            this is used directly instead of generating one via the configured
+            LLM provider.
 
     Returns:
         A confirmation string containing the generated checkpoint ID
@@ -150,6 +156,15 @@ async def save_snapshot(message: str) -> str:
     except SnapshotError as exc:
         return f"[error] Snapshot capture failed: {exc}"
 
+    if mental_map and mental_map.strip():
+        checkpoint = checkpoint.model_copy(update={"mental_map": mental_map.strip()})
+    else:
+        try:
+            generated_map = await generate_mental_map(checkpoint.git_diff, checkpoint.history)
+            checkpoint = checkpoint.model_copy(update={"mental_map": generated_map})
+        except (ConfigError, LLMError) as exc:
+            logger.warning("LLM mental map generation skipped or failed: %s", exc)
+
     try:
         path = await loop.run_in_executor(None, save_checkpoint, checkpoint)
     except StoreError as exc:
@@ -157,11 +172,12 @@ async def save_snapshot(message: str) -> str:
 
     return (
         f"Checkpoint saved successfully.\n"
-        f"  ID:     {checkpoint.id}\n"
-        f"  Branch: {checkpoint.branch}\n"
-        f"  Commit: {checkpoint.commit_hash[:8]}\n"
-        f"  Files:  {len(checkpoint.files_locked)} modified\n"
-        f"  Path:   {path}"
+        f"  ID:         {checkpoint.id}\n"
+        f"  Branch:     {checkpoint.branch}\n"
+        f"  Commit:     {checkpoint.commit_hash[:8]}\n"
+        f"  Files:      {len(checkpoint.files_locked)} modified\n"
+        f"  Mental Map: {'Yes' if checkpoint.mental_map else 'No'}\n"
+        f"  Path:       {path}"
     )
 
 
@@ -179,14 +195,16 @@ def checkpoint_guidance() -> str:
     """
     return (
         "You have access to a local checkpoint system via the following tools:\n\n"
-        "1. **save_snapshot(message)** -- Capture the current development session\n"
+        "1. **save_snapshot(message, mental_map=None)** -- Capture the current development session\n"
         "   state (git branch, commit, diff, modified files, shell history) as a\n"
         "   persistent checkpoint. Call this tool:\n"
         "   - Before starting a complex refactoring or risky code change.\n"
         "   - After completing a meaningful unit of work.\n"
         "   - When the developer explicitly asks to save progress.\n"
         "   Always provide a concise but descriptive message summarising the\n"
-        "   session intent (e.g. 'Pre-refactor: auth module extraction').\n\n"
+        "   session intent (e.g. 'Pre-refactor: auth module extraction').\n"
+        "   You should also pre-generate a detailed 'mental_map' summarizing the context,\n"
+        "   changes made, and next steps, and pass it directly to avoid extra LLM REST API calls.\n\n"
         "2. **list_snapshots()** -- Retrieve a summary of all saved checkpoints.\n"
         "   Use this to help the developer locate a prior state or to verify\n"
         "   that a checkpoint was saved successfully.\n\n"

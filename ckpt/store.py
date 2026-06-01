@@ -161,6 +161,7 @@ def _secure_write(path: Path, data: str) -> None:
                     ],
                     capture_output=True,
                     check=True,
+                    stdin=subprocess.DEVNULL,
                 )
         except Exception as exc:
             logger.warning(
