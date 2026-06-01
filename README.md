@@ -56,6 +56,25 @@ ckpt setup
 
 ---
 
+## 🚀 The "Zero-Click" Setup: Let Your AI Do It!
+
+Because modern coding AI assistants (like Claude, Cursor, or Cline) have direct access to your local filesystem, **you don't even need to configure these JSON files yourself!** 
+
+You can literally copy-paste one of the prompts below into your AI chat, and your AI assistant will automatically locate, parse, and update the configuration files on your operating system.
+
+### 💬 Prompts to Copy-Paste Into Your AI Assistant:
+
+*   **For Claude Desktop:**
+    > *"Please find my Claude Desktop configuration file on my system and add the checkpoint MCP server to it. Use the command 'uvx' with args ['--from', 'ckpt-cli', 'ckpt-mcp']."`*
+*   **For VS Code (Cline / Roo Code):**
+    > *"Please locate my Cline/Roo Code MCP settings JSON file under my VS Code AppData folder, and register the checkpoint MCP server using the 'uvx --from ckpt-cli ckpt-mcp' command."*
+*   **For Cursor:**
+    > *"Please add the checkpoint MCP server with command 'uvx --from ckpt-cli ckpt-mcp' to Cursor's global storage configuration file."*
+
+The AI assistant will find the file (e.g. `%APPDATA%\Claude\claude_desktop_config.json` on Windows, or `~/Library/Application Support/` on macOS), insert the `checkpoint` server block, and write the file. You will just need to approve the file write, and the tool is instantly active!
+
+---
+
 ## 🔌 AI & Model Context Protocol (MCP) Integration
 
 `ckpt` features a built-in **Model Context Protocol (MCP)** server. This allows AI assistants like **Cursor**, **Claude Desktop**, **Windsurf**, or **Claude Code** to programmatically save, list, and restore checkpoints in real-time.
