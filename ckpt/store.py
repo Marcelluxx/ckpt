@@ -407,7 +407,7 @@ async def _generate_mental_map_gemini(
     Args:
         diff: Raw git diff.
         history: Recent shell commands.
-        model: Gemini model name (e.g. ``"gemini-2.0-flash"``).
+        model: Gemini model name (e.g. ``"gemini-3.1-flash-lite"``).
         api_key: Google AI Studio API key.
 
     Returns:

@@ -198,9 +198,14 @@ def restore(
     # --- Apply stored diff ------------------------------------------------
     if checkpoint.git_diff:
         try:
+            # Ensure the diff patch string ends with a trailing newline to prevent "corrupt patch" errors on Windows
+            diff_to_apply = checkpoint.git_diff
+            if not diff_to_apply.endswith("\n"):
+                diff_to_apply += "\n"
+
             subprocess.run(
                 ["git", "apply", "--allow-empty"],
-                input=checkpoint.git_diff,
+                input=diff_to_apply,
                 check=True,
                 capture_output=True,
                 text=True,
@@ -255,7 +260,7 @@ def setup() -> None:
         default_model = "llama3"
     elif choice == 2:
         provider = "gemini"
-        default_model = "gemini-2.0-flash"
+        default_model = "gemini-3.1-flash-lite"
     else:
         _abort("Invalid choice. Please enter 1 or 2.")
         return  # unreachable, keeps type checker happy

@@ -112,7 +112,7 @@ def test_get_last_commit_hash_empty_repo(mocker: MockerFixture) -> None:
 def test_get_git_diff(mocker: MockerFixture) -> None:
     """Test get_git_diff retrieves diff output."""
     mocker.patch("ckpt.snapshot._run_git", return_value="diff content")
-    assert get_git_diff() == "diff content"
+    assert get_git_diff() == "diff content\n"
 
 
 def test_get_modified_files(mocker: MockerFixture) -> None:

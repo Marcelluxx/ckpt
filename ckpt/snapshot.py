@@ -134,7 +134,10 @@ def get_git_diff() -> str:
         GitNotFoundError: If git is not installed.
         GitCommandError: If the command fails.
     """
-    return _run_git("diff")
+    diff = _run_git("diff")
+    if diff and not diff.endswith("\n"):
+        diff += "\n"
+    return diff
 
 
 def get_modified_files() -> list[str]:

@@ -253,7 +253,7 @@ async def test_generate_mental_map_ollama(mocker: MockerFixture) -> None:
 async def test_generate_mental_map_gemini(mocker: MockerFixture) -> None:
     """Test mental map generation using Gemini provider with mocked httpx.AsyncClient."""
     save_config(
-        {"provider": "gemini", "model": "gemini-2.0-flash", "api_key": "secret_key"}
+        {"provider": "gemini", "model": "gemini-3.1-flash-lite", "api_key": "secret_key"}
     )
 
     mock_response = mocker.MagicMock()
@@ -276,7 +276,7 @@ async def test_generate_mental_map_gemini(mocker: MockerFixture) -> None:
 @pytest.mark.asyncio
 async def test_generate_mental_map_gemini_missing_key() -> None:
     """Test Gemini provider raises ConfigError if api_key is missing."""
-    save_config({"provider": "gemini", "model": "gemini-2.0-flash"})
+    save_config({"provider": "gemini", "model": "gemini-3.1-flash-lite"})
     with pytest.raises(ConfigError) as exc_info:
         await generate_mental_map("diff", [])
     assert "Gemini requires an 'api_key'" in str(exc_info.value)
