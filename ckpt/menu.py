@@ -281,3 +281,80 @@ def select_checkpoint_interactive(checkpoints: list[Checkpoint]) -> str | None:
 
     finally:
         _show_cursor()
+
+
+def select_option_interactive(options: list[tuple[str, str]], title: str) -> str | None:
+    """Display an interactive terminal menu for choosing from a list of options.
+
+    Renders a title and a list of options, listens to real-time arrow keys,
+    and returns the selected option value.
+
+    Args:
+        options: A list of (value, display_label) tuples.
+        title: Title/header message shown above the choices.
+
+    Returns:
+        The selected option value (string), or None if cancelled.
+    """
+    if not options:
+        return None
+
+    selected_idx = 0
+    num_lines = len(options) + 1  # Options + Title line
+
+    _hide_cursor()
+    try:
+        import shutil
+
+        while True:
+            cols, _ = shutil.get_terminal_size()
+
+            lines = []
+            # Title with Cyan color
+            title_text = f"\033[1;36m{title}\033[0m"
+            if len(title_text) > cols:
+                title_text = title_text[:cols - 3] + "..."
+            lines.append(title_text)
+
+            for idx, (val, label) in enumerate(options):
+                # Ensure each line fits the terminal width
+                max_label_len = cols - 4
+                disp_label = label
+                if len(disp_label) > max_label_len:
+                    disp_label = disp_label[:max_label_len - 3] + "..." if max_label_len > 3 else disp_label[:max_label_len]
+
+                if idx == selected_idx:
+                    indicator = "\033[1;35m❯\033[0m"  # Bold Magenta
+                    label_str = f"\033[1;37m{disp_label}\033[0m"  # Bold White
+                else:
+                    indicator = " "
+                    label_str = f"\033[2;37m{disp_label}\033[0m"  # Dim Gray
+
+                lines.append(f"{indicator}  {label_str}")
+
+            # Draw lines
+            sys.stdout.write("\n".join(lines) + "\n")
+            sys.stdout.flush()
+
+            # Read key
+            try:
+                key = _get_keypress()
+            except KeyboardInterrupt:
+                _clear_lines(num_lines)
+                return None
+
+            if key == "up":
+                selected_idx = (selected_idx - 1) % len(options)
+            elif key == "down":
+                selected_idx = (selected_idx + 1) % len(options)
+            elif key == "enter":
+                _clear_lines(num_lines)
+                return options[selected_idx][0]
+            elif key in ("escape", "ctrl-c"):
+                _clear_lines(num_lines)
+                return None
+
+            _clear_lines(num_lines)
+
+    finally:
+        _show_cursor()

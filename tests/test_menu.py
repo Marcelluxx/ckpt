@@ -9,7 +9,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from ckpt.models import Checkpoint
-from ckpt.menu import format_relative_time, select_checkpoint_interactive
+from ckpt.menu import format_relative_time, select_checkpoint_interactive, select_option_interactive
 
 
 def test_format_relative_time() -> None:
@@ -99,3 +99,42 @@ def test_select_checkpoint_interactive_cancel(mocker: MockerFixture) -> None:
     selected_id = select_checkpoint_interactive([cp1])
 
     assert selected_id is None
+
+
+def test_select_option_interactive_empty() -> None:
+    """Test that select_option_interactive with empty options list returns None."""
+    assert select_option_interactive([], "Title") is None
+
+
+def test_select_option_interactive_select(mocker: MockerFixture) -> None:
+    """Test successful selection of an option via select_option_interactive."""
+    options = [
+        ("opt1", "Option 1"),
+        ("opt2", "Option 2"),
+    ]
+
+    mock_keypress = mocker.patch("ckpt.menu._get_keypress")
+    mock_keypress.side_effect = ["down", "enter"]
+
+    mocker.patch("sys.stdout.write")
+    mocker.patch("sys.stdout.flush")
+
+    selected = select_option_interactive(options, "Select Option")
+    assert selected == "opt2"
+    assert mock_keypress.call_count == 2
+
+
+def test_select_option_interactive_cancel(mocker: MockerFixture) -> None:
+    """Test cancellation of select_option_interactive via escape key."""
+    options = [
+        ("opt1", "Option 1"),
+    ]
+
+    mock_keypress = mocker.patch("ckpt.menu._get_keypress")
+    mock_keypress.side_effect = ["escape"]
+
+    mocker.patch("sys.stdout.write")
+    mocker.patch("sys.stdout.flush")
+
+    selected = select_option_interactive(options, "Select Option")
+    assert selected is None

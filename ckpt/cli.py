@@ -31,7 +31,7 @@ from ckpt.store import (
     save_config,
     list_checkpoints,
 )
-from ckpt.menu import select_checkpoint_interactive
+from ckpt.menu import select_checkpoint_interactive, select_option_interactive
 
 app = typer.Typer(
     name="ckpt",
@@ -248,26 +248,25 @@ def setup() -> None:
     typer.echo()
 
     # --- Provider selection -----------------------------------------------
-    typer.echo("Select your LLM provider:")
-    typer.secho("  [1]  Ollama       (local, no API key)", fg=typer.colors.GREEN)
-    typer.secho("  [2]  Gemini       (Google AI Studio)", fg=typer.colors.BLUE)
-    typer.secho("  [3]  OpenRouter   (API-driven cloud models)", fg=typer.colors.MAGENTA)
-    typer.echo()
+    options = [
+        ("ollama", "Ollama       (local, no API key)"),
+        ("gemini", "Gemini       (Google AI Studio)"),
+        ("openrouter", "OpenRouter   (API-driven cloud models)"),
+    ]
+    provider = select_option_interactive(options, "Select your LLM provider:")
+    if not provider:
+        _info("Setup cancelled.")
+        raise typer.Exit(0)
 
-    choice = typer.prompt("Enter choice", type=int, default=1)
-
-    if choice == 1:
-        provider = "ollama"
+    if provider == "ollama":
         default_model = "llama3"
-    elif choice == 2:
-        provider = "gemini"
+    elif provider == "gemini":
         default_model = "gemini-3.1-flash-lite"
-    elif choice == 3:
-        provider = "openrouter"
+    elif provider == "openrouter":
         default_model = "meta-llama/llama-3-8b-instruct:free"
     else:
-        _abort("Invalid choice. Please enter 1, 2, or 3.")
-        return  # unreachable, keeps type checker happy
+        _abort("Invalid provider selection.")
+        return
 
     # --- Model name -------------------------------------------------------
     model = typer.prompt("Model name", default=default_model)
