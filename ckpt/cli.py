@@ -10,7 +10,7 @@ Provides three commands:
 from __future__ import annotations
 
 import subprocess
-from typing import NoReturn
+from typing import NoReturn, Optional
 
 import typer
 
@@ -29,7 +29,9 @@ from ckpt.store import (
     load_checkpoint,
     save_checkpoint,
     save_config,
+    list_checkpoints,
 )
+from ckpt.menu import select_checkpoint_interactive
 
 app = typer.Typer(
     name="ckpt",
@@ -141,9 +143,9 @@ def save(
 
 @app.command()
 def restore(
-    checkpoint_id: str = typer.Argument(
-        ...,
-        help="8-character ID of the checkpoint to restore.",
+    checkpoint_id: Optional[str] = typer.Argument(
+        None,
+        help="8-character ID of the checkpoint to restore. If omitted, triggers interactive selection.",
     ),
 ) -> None:
     """Restore a saved checkpoint by its ID.
@@ -152,6 +154,21 @@ def restore(
     then prints the AI-generated Mental Map if available.
     """
     # --- Load -------------------------------------------------------------
+    if not checkpoint_id:
+        try:
+            checkpoints = list_checkpoints()
+        except StoreError as exc:
+            _abort(f"Failed to list checkpoints: {exc}")
+
+        if not checkpoints:
+            _abort("No checkpoints found. Capture a snapshot first using `ckpt save`.")
+
+        selected_id = select_checkpoint_interactive(checkpoints)
+        if not selected_id:
+            _info("Restoration cancelled.")
+            raise typer.Exit(0)
+        checkpoint_id = selected_id
+
     try:
         checkpoint = load_checkpoint(checkpoint_id)
     except CheckpointNotFoundError:
@@ -273,3 +290,7 @@ def setup() -> None:
         f"   provider: {provider}  |  model: {model}",
         fg=typer.colors.BRIGHT_BLACK,
     )
+
+
+if __name__ == "__main__":
+    app()
