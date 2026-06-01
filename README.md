@@ -70,6 +70,8 @@ You can literally copy-paste one of the prompts below into your AI chat, and you
     > *"Please locate my Cline/Roo Code MCP settings JSON file under my VS Code AppData folder, and register the checkpoint MCP server using the 'uvx --from ckpt-cli ckpt-mcp' command."*
 *   **For Cursor:**
     > *"Please add the checkpoint MCP server with command 'uvx --from ckpt-cli ckpt-mcp' to Cursor's global storage configuration file."*
+*   **For Antigravity (Your Google Gemini Partner Agent):**
+    > *"Installa ed attiva automaticamente il server MCP per il salvataggio dei checkpoint nel mio ambiente di lavoro."*
 
 The AI assistant will find the file (e.g. `%APPDATA%\Claude\claude_desktop_config.json` on Windows, or `~/Library/Application Support/` on macOS), insert the `checkpoint` server block, and write the file. You will just need to approve the file write, and the tool is instantly active!
 
