@@ -280,9 +280,9 @@ def load_config() -> dict[str, str]:
     Expected schema::
 
         {
-            "provider": "ollama" | "gemini",
+            "provider": "ollama" | "gemini" | "openrouter",
             "model": "<model-name>",
-            "api_key": "<key>"          // required for gemini only
+            "api_key": "<key>"          // required for gemini and openrouter
         }
 
     Returns:
@@ -453,11 +453,61 @@ async def _generate_mental_map_gemini(
         raise LLMError(f"Unexpected Gemini response format: {exc}") from exc
 
 
+async def _generate_mental_map_openrouter(
+    diff: str,
+    history: list[str],
+    model: str,
+    api_key: str,
+) -> str:
+    """Call the OpenRouter API to generate a mental map.
+
+    Args:
+        diff: Raw git diff.
+        history: Recent shell commands.
+        model: OpenRouter model name (e.g. ``"meta-llama/llama-3-8b-instruct:free"``).
+        api_key: OpenRouter API key.
+
+    Returns:
+        The generated mental map as a Markdown string.
+
+    Raises:
+        LLMError: If the HTTP request fails or response is invalid.
+    """
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": _SYSTEM_PROMPT},
+            {"role": "user", "content": _build_user_prompt(diff, history)}
+        ],
+        "temperature": 0.4,
+    }
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",
+        "HTTP-Referer": "https://github.com/Marcelluxx/ckpt",
+        "X-Title": "ckpt",
+    }
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        try:
+            resp = await client.post(url, json=payload, headers=headers)
+            resp.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise LLMError(f"OpenRouter API request failed: {exc}") from exc
+
+    try:
+        data = resp.json()
+        return data["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError, json.JSONDecodeError) as exc:
+        raise LLMError(f"Unexpected OpenRouter response format: {exc}") from exc
+
+
 async def generate_mental_map(diff: str, history: list[str]) -> str:
     """Generate an AI mental map using the configured LLM provider.
 
     Reads the provider selection from ``~/.config/ckpt/config.json`` and
-    dispatches to the appropriate backend (Ollama or Gemini).
+    dispatches to the appropriate backend (Ollama, Gemini, or OpenRouter).
 
     Args:
         diff: Raw git diff output.
@@ -481,6 +531,11 @@ async def generate_mental_map(diff: str, history: list[str]) -> str:
         if not api_key:
             raise ConfigError("Gemini requires an 'api_key' in config.json.")
         return await _generate_mental_map_gemini(diff, history, model, api_key)
+    elif provider == "openrouter":
+        api_key = config.get("api_key", "")
+        if not api_key:
+            raise ConfigError("OpenRouter requires an 'api_key' in config.json.")
+        return await _generate_mental_map_openrouter(diff, history, model, api_key)
     else:
         raise ConfigError(f"Unknown LLM provider: '{provider}'")
 

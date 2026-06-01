@@ -283,6 +283,40 @@ async def test_generate_mental_map_gemini_missing_key() -> None:
 
 
 @pytest.mark.asyncio
+async def test_generate_mental_map_openrouter(mocker: MockerFixture) -> None:
+    """Test mental map generation using OpenRouter provider with mocked httpx.AsyncClient."""
+    save_config(
+        {"provider": "openrouter", "model": "meta-llama/llama-3-8b-instruct", "api_key": "or_secret_key"}
+    )
+
+    mock_response = mocker.MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "choices": [{"message": {"content": "OpenRouter mental map response"}}]
+    }
+
+    mock_post = mocker.patch("httpx.AsyncClient.post", return_value=mock_response)
+
+    result = await generate_mental_map("diff", ["cmd1", "cmd2"])
+
+    assert result == "OpenRouter mental map response"
+    mock_post.assert_called_once()
+    call_args, call_kwargs = mock_post.call_args
+    assert call_args[0] == "https://openrouter.ai/api/v1/chat/completions"
+    assert call_kwargs["headers"]["Authorization"] == "Bearer or_secret_key"
+    assert call_kwargs["json"]["model"] == "meta-llama/llama-3-8b-instruct"
+
+
+@pytest.mark.asyncio
+async def test_generate_mental_map_openrouter_missing_key() -> None:
+    """Test OpenRouter provider raises ConfigError if api_key is missing."""
+    save_config({"provider": "openrouter", "model": "meta-llama/llama-3-8b-instruct"})
+    with pytest.raises(ConfigError) as exc_info:
+        await generate_mental_map("diff", [])
+    assert "OpenRouter requires an 'api_key'" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
 async def test_generate_mental_map_unknown_provider() -> None:
     """Test that an unknown LLM provider raises ConfigError."""
     save_config({"provider": "unsupported_provider"})

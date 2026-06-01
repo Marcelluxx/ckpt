@@ -249,8 +249,9 @@ def setup() -> None:
 
     # --- Provider selection -----------------------------------------------
     typer.echo("Select your LLM provider:")
-    typer.secho("  [1]  Ollama   (local, no API key)", fg=typer.colors.GREEN)
-    typer.secho("  [2]  Gemini   (Google AI Studio)", fg=typer.colors.BLUE)
+    typer.secho("  [1]  Ollama       (local, no API key)", fg=typer.colors.GREEN)
+    typer.secho("  [2]  Gemini       (Google AI Studio)", fg=typer.colors.BLUE)
+    typer.secho("  [3]  OpenRouter   (API-driven cloud models)", fg=typer.colors.MAGENTA)
     typer.echo()
 
     choice = typer.prompt("Enter choice", type=int, default=1)
@@ -261,22 +262,30 @@ def setup() -> None:
     elif choice == 2:
         provider = "gemini"
         default_model = "gemini-3.1-flash-lite"
+    elif choice == 3:
+        provider = "openrouter"
+        default_model = "meta-llama/llama-3-8b-instruct:free"
     else:
-        _abort("Invalid choice. Please enter 1 or 2.")
+        _abort("Invalid choice. Please enter 1, 2, or 3.")
         return  # unreachable, keeps type checker happy
 
     # --- Model name -------------------------------------------------------
     model = typer.prompt("Model name", default=default_model)
 
-    # --- API key (Gemini only) --------------------------------------------
+    # --- API key (Gemini and OpenRouter) ----------------------------------
     config: dict[str, str] = {
         "provider": provider,
         "model": model,
     }
 
-    if provider == "gemini":
+    if provider in ("gemini", "openrouter"):
+        prompt_label = (
+            "Google AI Studio API key"
+            if provider == "gemini"
+            else "OpenRouter API key"
+        )
         api_key = typer.prompt(
-            "Google AI Studio API key",
+            prompt_label,
             hide_input=True,
         )
         if not api_key.strip():

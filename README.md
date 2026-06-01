@@ -41,7 +41,7 @@ If you want `ckpt` to automatically generate high-quality mental maps using an L
 ```bash
 ckpt setup
 ```
-*(Choose between a local **Ollama** instance to keep 100% of your code offline, or **Google Gemini** for lightning-fast cloud summaries).*
+*(Choose between a local **Ollama** instance to keep 100% of your code offline, **Google Gemini** for lightning-fast cloud summaries, or **OpenRouter** to access any open/closed model).*
 
 ### Step 3: Start Checkpointing!
 *   **Save your progress:**
@@ -174,7 +174,7 @@ Install `ckpt-mcp` in your environment and register it using Claude Code's instr
     │                     Mental Map Generator                     │
     │  - DIRECT: Injected by AI agent directly in memory           │
     │  - LOCAL: Ollama (LLaMA-3 / Mistral)                         │
-    │  - CLOUD: Google Gemini API (Secure, capped at 3k chars)     │
+    │  - CLOUD: Google Gemini or OpenRouter (Capped at 3k chars)   │
     └──────────────────────────────┬───────────────────────────────┘
                                    │  JSON Metadata & Summary
                                    ▼
