@@ -31,11 +31,12 @@ from ckpt.store import (
     save_config,
     list_checkpoints,
 )
+from ckpt import __version__
 from ckpt.menu import select_checkpoint_interactive, select_option_interactive
 
 app = typer.Typer(
     name="ckpt",
-    help="Capture and restore development session checkpoints.",
+    help=f"Capture and restore development session checkpoints (v{__version__}).",
     add_completion=False,
     no_args_is_help=True,
 )
@@ -301,6 +302,28 @@ def setup() -> None:
         f"   provider: {provider}  |  model: {model}",
         fg=typer.colors.BRIGHT_BLACK,
     )
+
+
+def version_callback(value: bool) -> None:
+    """Print the version and exit."""
+    if value:
+        typer.echo(f"ckpt version {__version__}")
+        raise typer.Exit()
+
+
+@app.callback()
+def main(
+    version: Optional[bool] = typer.Option(
+        None,
+        "--version",
+        "-v",
+        help="Show the version and exit.",
+        callback=version_callback,
+        is_eager=True,
+    ),
+) -> None:
+    """Capture and restore development session checkpoints."""
+    pass
 
 
 if __name__ == "__main__":

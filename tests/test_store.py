@@ -60,7 +60,7 @@ def test_save_and_load_checkpoint(mock_home_dir: Path) -> None:
 
     # Save
     saved_path = save_checkpoint(checkpoint)
-    assert saved_path == _snapshots_dir() / "a1b2c3d4.json"
+    assert saved_path == _snapshots_dir() / Path.cwd().name / "a1b2c3d4.json"
     assert saved_path.is_file()
 
     # Load
@@ -362,3 +362,49 @@ def test_generate_mental_map_sync_wrapper(mocker: MockerFixture) -> None:
     result = generate_mental_map_sync("diff", ["cmd"])
     assert result == "Sync Wrapper Output"
     mock_generate.assert_called_once_with("diff", ["cmd"])
+
+
+def test_project_snapshots_dir(mock_home_dir: Path, mocker: MockerFixture) -> None:
+    """Verify get_project_snapshots_dir logic (creation, migration, interactive rename)."""
+    from ckpt.store import get_project_snapshots_dir, _snapshots_dir
+    import shutil
+
+    base_dir = _snapshots_dir()
+    project_name = Path.cwd().name
+
+    # 1. Test silent creation of project subfolder
+    proj_dir = get_project_snapshots_dir(interactive=False)
+    assert proj_dir == base_dir / project_name
+    assert proj_dir.is_dir()
+
+    # 2. Test migration of legacy files
+    shutil.rmtree(base_dir)
+    base_dir.mkdir(parents=True)
+
+    legacy_file = base_dir / "a1b2c3d4.json"
+    legacy_file.write_text("{}", encoding="utf-8")
+
+    proj_dir2 = get_project_snapshots_dir(interactive=False)
+    assert proj_dir2 == base_dir / project_name
+    assert (base_dir / "legacy" / "a1b2c3d4.json").is_file()
+    assert not legacy_file.exists()
+
+    # 3. Test interactive rename mapping
+    shutil.rmtree(base_dir)
+    base_dir.mkdir(parents=True)
+
+    # Create an old project folder
+    old_proj_dir = base_dir / "old-project-name"
+    old_proj_dir.mkdir()
+    (old_proj_dir / "file.json").write_text("{}", encoding="utf-8")
+
+    # Mock sys.stdin.isatty to True and select_option_interactive to select the old project
+    mocker.patch("sys.stdin.isatty", return_value=True)
+    mock_select = mocker.patch("ckpt.menu.select_option_interactive", return_value="old-project-name")
+
+    proj_dir3 = get_project_snapshots_dir(interactive=True)
+
+    assert proj_dir3 == base_dir / project_name
+    assert not old_proj_dir.exists()  # should be renamed
+    assert (proj_dir3 / "file.json").is_file()
+    mock_select.assert_called_once()

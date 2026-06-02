@@ -82,6 +82,82 @@ def _snapshots_dir() -> Path:
     return _config_dir() / "snapshots"
 
 
+def get_project_snapshots_dir(interactive: bool = True) -> Path:
+    """Return the project-specific snapshots directory.
+
+    If the directory does not exist, looks for other project directories inside
+    the root snapshots directory. If found and running in an interactive terminal,
+    prompts the user to select if they renamed the project folder.
+
+    Args:
+        interactive: Whether to allow interactive prompts if the directory is missing.
+
+    Returns:
+        The absolute Path to the project's snapshots directory.
+    """
+    base_dir = _snapshots_dir()
+    
+    # 1. First make sure the base snapshot directory exists
+    if not base_dir.exists():
+        _secure_mkdir(base_dir)
+
+    # 2. Migrate legacy checkpoints directly under snapshots/ to snapshots/legacy/
+    legacy_files = list(base_dir.glob("*.json"))
+    if legacy_files:
+        legacy_dir = base_dir / "legacy"
+        _secure_mkdir(legacy_dir)
+        for f in legacy_files:
+            try:
+                f.rename(legacy_dir / f.name)
+            except Exception:
+                pass
+
+    project_name = Path.cwd().name
+    # Ensure project_name is safe (no path traversal)
+    if not project_name or project_name in (".", ".."):
+        project_name = "unknown"
+
+    target = base_dir / project_name
+
+    if target.is_dir():
+        return target
+
+    # Target directory does not exist. Check for other project subdirectories.
+    subdirs = [d for d in base_dir.iterdir() if d.is_dir() and d.name != "legacy"]
+
+    if subdirs and interactive and sys.stdin.isatty():
+        # Build interactive options
+        options = [("new", f"No, this is a new project. Create directory '{project_name}'")]
+        for d in subdirs:
+            options.append((d.name, f"Yes, I renamed it from '{d.name}'"))
+
+        from ckpt.menu import select_option_interactive
+        
+        # We print a clean newline to separate from previous Typer/user prints
+        print()
+        choice = select_option_interactive(
+            options,
+            f"No checkpoint directory found for '{project_name}'. Did you rename this project?"
+        )
+
+        if choice is None:
+            # User cancelled selection (e.g. pressed Escape or Ctrl-C)
+            raise StoreError("Action cancelled.")
+
+        if choice != "new":
+            old_path = base_dir / choice
+            try:
+                old_path.rename(target)
+                logger.info("Renamed project checkpoint directory from %s to %s", choice, project_name)
+                return target
+            except OSError as exc:
+                raise StoreError(f"Failed to rename checkpoint directory: {exc}") from exc
+
+    # Default/fallback: create the new directory silently
+    _secure_mkdir(target)
+    return target
+
+
 def _config_file() -> Path:
     """Return the path to the LLM configuration JSON file.
 
@@ -177,7 +253,7 @@ def _secure_write(path: Path, data: str) -> None:
 def save_checkpoint(checkpoint: Checkpoint) -> Path:
     """Persist a checkpoint to disk as a JSON file.
 
-    The file is written to ``~/.config/ckpt/snapshots/<id>.json``.
+    The file is written to ``~/.config/ckpt/snapshots/<project_name>/<id>.json``.
 
     Args:
         checkpoint: The :class:`Checkpoint` instance to save.
@@ -188,7 +264,8 @@ def save_checkpoint(checkpoint: Checkpoint) -> Path:
     Raises:
         StoreError: If the write operation fails.
     """
-    target = _snapshots_dir() / f"{checkpoint.id}.json"
+    project_dir = get_project_snapshots_dir(interactive=True)
+    target = project_dir / f"{checkpoint.id}.json"
     try:
         _secure_write(target, checkpoint.model_dump_json(indent=2))
     except OSError as exc:
@@ -214,8 +291,24 @@ def load_checkpoint(checkpoint_id: str) -> Checkpoint:
     if not _SAFE_ID_RE.match(checkpoint_id):
         raise CheckpointNotFoundError(f"No checkpoint found with id '{checkpoint_id}'")
 
-    target = _snapshots_dir() / f"{checkpoint_id}.json"
-    if not target.is_file():
+    target = None
+    
+    # Try looking in the current project's snapshots directory first (non-interactive)
+    try:
+        current_project_dir = get_project_snapshots_dir(interactive=False)
+        candidate = current_project_dir / f"{checkpoint_id}.json"
+        if candidate.is_file():
+            target = candidate
+    except Exception:
+        pass
+
+    # Fallback: search all subdirectories under base snapshots folder
+    if not target:
+        for path in _snapshots_dir().glob(f"**/{checkpoint_id}.json"):
+            target = path
+            break
+
+    if not target or not target.is_file():
         raise CheckpointNotFoundError(f"No checkpoint found with id '{checkpoint_id}'")
 
     try:
@@ -228,13 +321,13 @@ def load_checkpoint(checkpoint_id: str) -> Checkpoint:
 
 
 def list_checkpoints() -> list[Checkpoint]:
-    """Return all stored checkpoints, sorted newest-first.
+    """Return all stored checkpoints for the current project, sorted newest-first.
 
     Returns:
         A list of :class:`Checkpoint` instances ordered by descending
         timestamp.
     """
-    snap_dir = _snapshots_dir()
+    snap_dir = get_project_snapshots_dir(interactive=True)
     if not snap_dir.is_dir():
         return []
 
@@ -262,8 +355,24 @@ def delete_checkpoint(checkpoint_id: str) -> None:
     if not _SAFE_ID_RE.match(checkpoint_id):
         raise CheckpointNotFoundError(f"No checkpoint found with id '{checkpoint_id}'")
 
-    target = _snapshots_dir() / f"{checkpoint_id}.json"
-    if not target.is_file():
+    target = None
+    
+    # Try looking in the current project's snapshots directory first (non-interactive)
+    try:
+        current_project_dir = get_project_snapshots_dir(interactive=False)
+        candidate = current_project_dir / f"{checkpoint_id}.json"
+        if candidate.is_file():
+            target = candidate
+    except Exception:
+        pass
+
+    # Fallback: search all subdirectories
+    if not target:
+        for path in _snapshots_dir().glob(f"**/{checkpoint_id}.json"):
+            target = path
+            break
+
+    if not target or not target.is_file():
         raise CheckpointNotFoundError(f"No checkpoint found with id '{checkpoint_id}'")
     target.unlink()
     logger.info("Checkpoint deleted: %s", checkpoint_id)

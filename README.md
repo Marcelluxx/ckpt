@@ -36,6 +36,26 @@ pipx install ckpt-cli
 pip install ckpt-cli
 ```
 
+### 🔄 How to Update `ckpt`
+To upgrade `ckpt` to the latest version, run the command corresponding to the tool you used for installation:
+
+```bash
+# Using uv
+uv tool upgrade ckpt-cli
+
+# Or using pipx
+pipx upgrade ckpt-cli
+
+# Or using standard pip
+pip install --upgrade ckpt-cli
+```
+
+If you are developing locally and want to install your own changes in editable mode:
+```bash
+pip install -e .
+```
+
+
 ### Step 2: Initialize your AI Provider (Optional)
 If you want `ckpt` to automatically generate high-quality mental maps using an LLM when used via the CLI, run:
 ```bash
