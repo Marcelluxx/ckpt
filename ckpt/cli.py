@@ -247,7 +247,7 @@ def restore(
                 diff_to_apply += "\n"
 
             subprocess.run(
-                ["git", "apply", "--allow-empty"],
+                ["git", "apply", "--allow-empty", "--ignore-whitespace"],
                 input=diff_to_apply,
                 check=True,
                 capture_output=True,
