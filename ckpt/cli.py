@@ -177,24 +177,66 @@ def restore(
     except StoreError as exc:
         _abort(f"Failed to load checkpoint: {exc}")
 
+    # --- Safety Check: Check for uncommitted changes -----------------------
+    has_changes = False
+    try:
+        # git diff --quiet returns 1 if there are unstaged changes
+        res_unstaged = subprocess.run(["git", "diff", "--quiet"], capture_output=True)
+        # git diff --cached --quiet returns 1 if there are staged changes
+        res_staged = subprocess.run(
+            ["git", "diff", "--cached", "--quiet"], capture_output=True
+        )
+        if res_unstaged.returncode != 0 or res_staged.returncode != 0:
+            has_changes = True
+    except FileNotFoundError:
+        _abort("git is not installed or not on PATH.")
+    except Exception:
+        pass
+
+    if has_changes:
+        typer.secho(
+            "\n[WARNING] You have uncommitted changes in your repository. Restoring will overwrite them.",
+            fg=typer.colors.YELLOW,
+            bold=True,
+        )
+        confirm = typer.confirm("Are you sure you want to proceed?", default=False)
+        if not confirm:
+            _info("Restoration cancelled.")
+            raise typer.Exit(0)
+
     _info(
         f"Restoring [{checkpoint.id}] from {checkpoint.timestamp:%Y-%m-%d %H:%M:%S UTC}"
     )
 
-    # --- Revert unstaged changes via `git checkout -- .` ------------------
+    # --- Revert changes & Checkout base commit ----------------------------
     try:
+        # 1. Reset unstaged and staged changes
         subprocess.run(
-            ["git", "checkout", "--", "."],
+            ["git", "reset", "--hard"],
             check=True,
             capture_output=True,
             text=True,
         )
-        _success("Unstaged changes reverted.")
+        _success("Uncommitted changes cleared.")
+
+        # 2. Checkout the base commit hash of the checkpoint
+        if checkpoint.commit_hash != "0000000000000000000000000000000000000000":
+            subprocess.run(
+                ["git", "checkout", checkpoint.commit_hash],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            _success(f"Checked out base commit {checkpoint.commit_hash[:8]}.")
+        else:
+            _info(
+                "Repository has no commits (base commit is empty). Skipping checkout."
+            )
     except FileNotFoundError:
         _abort("git is not installed or not on PATH.")
     except subprocess.CalledProcessError as exc:
         stderr = (exc.stderr or "").strip()
-        _abort(f"git checkout failed: {stderr}")
+        _abort(f"git operation failed: {stderr}")
 
     # --- Apply stored diff ------------------------------------------------
     if checkpoint.git_diff:
