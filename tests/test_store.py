@@ -400,7 +400,9 @@ def test_project_snapshots_dir(mock_home_dir: Path, mocker: MockerFixture) -> No
 
     # Mock sys.stdin.isatty to True and select_option_interactive to select the old project
     mocker.patch("sys.stdin.isatty", return_value=True)
-    mock_select = mocker.patch("ckpt.menu.select_option_interactive", return_value="old-project-name")
+    mock_select = mocker.patch(
+        "ckpt.menu.select_option_interactive", return_value="old-project-name"
+    )
 
     proj_dir3 = get_project_snapshots_dir(interactive=True)
 

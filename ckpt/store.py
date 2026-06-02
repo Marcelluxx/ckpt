@@ -96,7 +96,7 @@ def get_project_snapshots_dir(interactive: bool = True) -> Path:
         The absolute Path to the project's snapshots directory.
     """
     base_dir = _snapshots_dir()
-    
+
     # 1. First make sure the base snapshot directory exists
     if not base_dir.exists():
         _secure_mkdir(base_dir)
@@ -127,17 +127,19 @@ def get_project_snapshots_dir(interactive: bool = True) -> Path:
 
     if subdirs and interactive and sys.stdin.isatty():
         # Build interactive options
-        options = [("new", f"No, this is a new project. Create directory '{project_name}'")]
+        options = [
+            ("new", f"No, this is a new project. Create directory '{project_name}'")
+        ]
         for d in subdirs:
             options.append((d.name, f"Yes, I renamed it from '{d.name}'"))
 
         from ckpt.menu import select_option_interactive
-        
+
         # We print a clean newline to separate from previous Typer/user prints
         print()
         choice = select_option_interactive(
             options,
-            f"No checkpoint directory found for '{project_name}'. Did you rename this project?"
+            f"No checkpoint directory found for '{project_name}'. Did you rename this project?",
         )
 
         if choice is None:
@@ -148,10 +150,16 @@ def get_project_snapshots_dir(interactive: bool = True) -> Path:
             old_path = base_dir / choice
             try:
                 old_path.rename(target)
-                logger.info("Renamed project checkpoint directory from %s to %s", choice, project_name)
+                logger.info(
+                    "Renamed project checkpoint directory from %s to %s",
+                    choice,
+                    project_name,
+                )
                 return target
             except OSError as exc:
-                raise StoreError(f"Failed to rename checkpoint directory: {exc}") from exc
+                raise StoreError(
+                    f"Failed to rename checkpoint directory: {exc}"
+                ) from exc
 
     # Default/fallback: create the new directory silently
     _secure_mkdir(target)
@@ -292,7 +300,7 @@ def load_checkpoint(checkpoint_id: str) -> Checkpoint:
         raise CheckpointNotFoundError(f"No checkpoint found with id '{checkpoint_id}'")
 
     target = None
-    
+
     # Try looking in the current project's snapshots directory first (non-interactive)
     try:
         current_project_dir = get_project_snapshots_dir(interactive=False)
@@ -356,7 +364,7 @@ def delete_checkpoint(checkpoint_id: str) -> None:
         raise CheckpointNotFoundError(f"No checkpoint found with id '{checkpoint_id}'")
 
     target = None
-    
+
     # Try looking in the current project's snapshots directory first (non-interactive)
     try:
         current_project_dir = get_project_snapshots_dir(interactive=False)
